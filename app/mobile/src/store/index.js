@@ -14,40 +14,58 @@ export function AppProvider({ children }) {
   const [history, setHistory] = useState([]);
   const [savedProducts, setSavedProducts] = useState([]);
   const [settings, setSettings] = useState({ notifications: true, darkMode: false });
+  const [showOnboardingAllergies, setShowOnboardingAllergies] = useState(false);
+
+  // Helper to load user-specific storage
+  const loadUserData = async (userId) => {
+    try {
+      const raw = await AsyncStorage.getItem(`safelabel_user_data_${userId}`);
+      if (raw) {
+        const loadedData = JSON.parse(raw);
+        setProfile(loadedData.profile || []);
+        setHistory(loadedData.history || []);
+        setSavedProducts(loadedData.savedProducts || []);
+        if (loadedData.settings) setSettings(loadedData.settings);
+        return loadedData;
+      } else {
+        // New user or no saved data for this user ID
+        setProfile([]);
+        setHistory([]);
+        setSavedProducts([]);
+      }
+    } catch (err) {
+      setProfile([]);
+      setHistory([]);
+      setSavedProducts([]);
+    }
+  };
 
   useEffect(() => {
     (async () => {
       try {
         const storedToken = await AsyncStorage.getItem('safelabel_token');
-        const raw = await AsyncStorage.getItem('safelabel_data');
-        
-        let loadedData = {};
-        if (raw) {
-          loadedData = JSON.parse(raw);
-          if (loadedData.profile) setProfile(loadedData.profile);
-          if (loadedData.history) setHistory(loadedData.history);
-          if (loadedData.savedProducts) setSavedProducts(loadedData.savedProducts);
-          if (loadedData.settings) setSettings(loadedData.settings);
-        }
-
         if (storedToken) {
           try {
             const dbUser = await fetchCurrentUserApi(storedToken);
-            setUser({
+            const currentUser = {
               id: dbUser.id,
               email: dbUser.email,
               name: dbUser.display_name || dbUser.name || 'User',
               role: dbUser.role,
-            });
+            };
+            setUser(currentUser);
             setToken(storedToken);
             setLoggedIn(true);
+
+            // Load user-specific profile & data
+            await loadUserData(dbUser.id);
           } catch (err) {
             await AsyncStorage.removeItem('safelabel_token');
             setLoggedIn(false);
+            setProfile([]);
+            setHistory([]);
+            setSavedProducts([]);
           }
-        } else if (loadedData.loggedIn && loadedData.user) {
-          setUser(loadedData.user);
-          setLoggedIn(true);
         }
       } catch (err) {
         // Fallback
@@ -57,11 +75,18 @@ export function AppProvider({ children }) {
     })();
   }, []);
 
-  const persistData = (next) =>
+  const persistData = (next, currentUserId = user?.id) => {
+    if (!currentUserId) return;
     AsyncStorage.setItem(
-      'safelabel_data',
-      JSON.stringify({ loggedIn, user, profile, history, savedProducts, settings, ...next })
+      `safelabel_user_data_${currentUserId}`,
+      JSON.stringify({
+        profile: next.profile !== undefined ? next.profile : profile,
+        history: next.history !== undefined ? next.history : history,
+        savedProducts: next.savedProducts !== undefined ? next.savedProducts : savedProducts,
+        settings: next.settings !== undefined ? next.settings : settings,
+      })
     ).catch(() => {});
+  };
 
   const login = async (email, password) => {
     const authRes = await loginApi(email, password);
@@ -78,7 +103,9 @@ export function AppProvider({ children }) {
     };
     setUser(nextUser);
     setLoggedIn(true);
-    persistData({ loggedIn: true, user: nextUser });
+
+    // Load data isolated to this logged in user
+    await loadUserData(dbUser.id);
     return nextUser;
   };
 
@@ -96,8 +123,17 @@ export function AppProvider({ children }) {
       role: dbUser.role,
     };
     setUser(nextUser);
+    // Reset user-specific state for clean new account
+    setProfile([]);
+    setHistory([]);
+    setSavedProducts([]);
     setLoggedIn(true);
-    persistData({ loggedIn: true, user: nextUser });
+
+    // Persist empty profile for new user
+    persistData({ profile: [], history: [], savedProducts: [] }, dbUser.id);
+    // Trigger onboarding allergy picker modal for new user
+    setShowOnboardingAllergies(true);
+
     return nextUser;
   };
 
@@ -105,7 +141,11 @@ export function AppProvider({ children }) {
     await AsyncStorage.removeItem('safelabel_token');
     setToken(null);
     setLoggedIn(false);
-    persistData({ loggedIn: false });
+    setUser({ name: 'User', email: '' });
+    setProfile([]);
+    setHistory([]);
+    setSavedProducts([]);
+    setShowOnboardingAllergies(false);
   };
 
   const toggleAllergen = (id) => {
@@ -145,6 +185,10 @@ export function AppProvider({ children }) {
     persistData({ settings: n });
   };
 
+  const dismissOnboardingAllergies = () => {
+    setShowOnboardingAllergies(false);
+  };
+
   const value = {
     ready,
     loggedIn,
@@ -154,6 +198,7 @@ export function AppProvider({ children }) {
     history,
     savedProducts,
     settings,
+    showOnboardingAllergies,
     login,
     register,
     logout,
@@ -163,7 +208,9 @@ export function AppProvider({ children }) {
     saveProduct,
     removeSavedProduct,
     updateSettings,
+    dismissOnboardingAllergies,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
+

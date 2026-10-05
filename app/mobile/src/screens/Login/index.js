@@ -16,24 +16,64 @@ export default function Login() {
 
   const submit = async () => {
     setError('');
-    if (!email.trim() || !password.trim()) {
+    const trimmedEmail = email.trim();
+    const trimmedName = name.trim();
+
+    if (mode === 'register' && !trimmedName) {
+      setError('Please enter your full name.');
+      return;
+    }
+
+    if (!trimmedEmail || !password.trim()) {
       setError('Please enter both email and password.');
       return;
     }
-    if (mode === 'register' && !name.trim()) {
-      setError('Please enter your full name.');
+
+    // Email validation
+    const ALLOWED_EMAIL_DOMAINS = [
+      '@gmail.com',
+      '@yahoo.com',
+      '@outlook.com',
+      '@hotmail.com',
+      '@icloud.com',
+      '@live.com',
+      '@proton.me',
+      '@protonmail.com',
+    ];
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const lowerEmail = trimmedEmail.toLowerCase();
+    const hasValidDomain = ALLOWED_EMAIL_DOMAINS.some((d) => lowerEmail.endsWith(d));
+
+    if (!emailRegex.test(trimmedEmail) || !hasValidDomain) {
+      setError('Please enter a valid email address ending with a recognized domain (e.g., @gmail.com or @yahoo.com).');
       return;
+    }
+
+    // Password validation for signup
+    if (mode === 'register') {
+      const hasLetter = /[a-zA-Z]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+      const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password);
+
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters long.');
+        return;
+      }
+      if (!hasLetter || !hasNumber || !hasSpecial) {
+        setError('Password must include at least one letter, one number, and one special character (e.g. @, #, $, !).');
+        return;
+      }
     }
 
     setLoading(true);
     try {
       if (mode === 'login') {
-        await login(email.trim(), password);
+        await login(trimmedEmail, password);
       } else {
-        await register(name.trim(), email.trim(), password);
+        await register(trimmedName, trimmedEmail, password);
       }
     } catch (err) {
-      setError(err.message || 'Authentication failed. Please check your connection.');
+      setError(err.message || 'Authentication failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }

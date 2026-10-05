@@ -1,5 +1,12 @@
 import React from "react";
-import { Pressable, Text, View, StyleSheet } from "react-native";
+import {
+  Pressable,
+  Text,
+  View,
+  StyleSheet,
+  Modal,
+  ScrollView,
+} from "react-native";
 import { C, R } from "../utils/theme";
 import { ALLERGENS } from "../utils/data";
 
@@ -48,6 +55,84 @@ export function AllergenPicker({ profile, onToggle }) {
         );
       })}
     </View>
+  );
+}
+
+export function OnboardingModal({ visible, profile, onToggle, onSave }) {
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(15, 23, 42, 0.65)",
+          justifyContent: "flex-end",
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: C.paper,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            padding: 24,
+            maxHeight: "85%",
+          }}
+        >
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={{ alignItems: "center", marginBottom: 18 }}>
+              <View
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  backgroundColor: C.accent,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 12,
+                }}
+              >
+                <Text style={{ fontSize: 32 }}>🛡️</Text>
+              </View>
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: "800",
+                  color: C.ink,
+                  textAlign: "center",
+                }}
+              >
+                Welcome to SafeLabel AI!
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: C.mute,
+                  textAlign: "center",
+                  marginTop: 6,
+                  lineHeight: 20,
+                }}
+              >
+                Select your food allergies and sensitivities so we can alert you
+                immediately when scanning food labels.
+              </Text>
+            </View>
+
+            <View style={{ marginVertical: 12 }}>
+              <AllergenPicker profile={profile} onToggle={onToggle} />
+            </View>
+
+            <Btn
+              title={
+                profile.length > 0
+                  ? `Save ${profile.length} Allergies & Continue`
+                  : "Continue Without Allergens"
+              }
+              onPress={onSave}
+              style={{ marginTop: 24 }}
+            />
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -117,12 +202,19 @@ export const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.paper },
   pad: { padding: 20, paddingBottom: 40 },
   avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: C.pale,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: C.accent,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    shadowColor: C.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   scanHero: {
     backgroundColor: C.accent,
@@ -134,9 +226,9 @@ export const s = StyleSheet.create({
     marginBottom: 16,
   },
   scanIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     backgroundColor: "#5BA7F5",
     alignItems: "center",
     justifyContent: "center",

@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../store";
 import { ALLERGENS } from "../../utils/data";
 import { C, R } from "../../utils/theme";
-import { Btn, Disclaimer, Verdict, s } from "../../components";
+import { Btn, Disclaimer, OnboardingModal, Verdict, s } from "../../components";
 
 const STEPS = [
   "Scan a barcode or photograph the label",
@@ -13,22 +13,73 @@ const STEPS = [
   "You see the ingredient, allergen and reason",
 ];
 export default function Home({ navigation }) {
-  const { profile, history, user, savedProducts } = useApp();
+  const {
+    profile,
+    history,
+    user,
+    savedProducts,
+    toggleAllergen,
+    showOnboardingAllergies,
+    dismissOnboardingAllergies,
+  } = useApp();
+
   return (
     <SafeAreaView style={s.screen}>
+      <OnboardingModal
+        visible={showOnboardingAllergies}
+        profile={profile}
+        onToggle={toggleAllergen}
+        onSave={dismissOnboardingAllergies}
+      />
       <ScrollView contentContainerStyle={s.pad}>
         <View
-          style={[s.row, { justifyContent: "space-between", marginBottom: 20 }]}
+          style={[
+            s.row,
+            {
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 20,
+            },
+          ]}
         >
-          <View>
-            <Text style={s.p}>Hello, {user.name.split(" ")[0]}!</Text>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={s.p}>
+              Hello, {user.name ? user.name.split(" ")[0] : "User"}!
+            </Text>
             <Text style={s.h1}>Stay safe, eat better.</Text>
           </View>
-          <View style={s.avatar}>
-            <Text style={{ fontWeight: "800", color: C.ink }}>
-              {user.name[0]}
+          <Pressable
+            onPress={() => navigation.navigate("Profile")}
+            style={({ pressed }) => [
+              s.avatar,
+              pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Open settings and profile"
+          >
+            <Text style={{ fontWeight: "800", color: "#fff", fontSize: 20 }}>
+              {user.name ? user.name[0].toUpperCase() : "U"}
             </Text>
-          </View>
+            <View
+              style={{
+                position: "absolute",
+                bottom: -2,
+                right: -2,
+                backgroundColor: C.ink,
+                borderRadius: 10,
+                width: 20,
+                height: 20,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1.5,
+                borderColor: "#fff",
+              }}
+            >
+              <Text style={{ fontSize: 10, color: "#fff", fontWeight: "bold" }}>
+                ⚙
+              </Text>
+            </View>
+          </Pressable>
         </View>
         <Pressable
           onPress={() => navigation.navigate("Scan")}
