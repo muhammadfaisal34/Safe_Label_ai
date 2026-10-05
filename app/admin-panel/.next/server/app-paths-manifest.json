@@ -1,3 +1,10 @@
 {
-  "/page": "app/page.js"
+  "/login/page": "app/login/page.js",
+  "/(admin)/dashboard/page": "app/(admin)/dashboard/page.js",
+  "/(admin)/users/page": "app/(admin)/users/page.js",
+  "/(admin)/products/page": "app/(admin)/products/page.js",
+  "/(admin)/scans/page": "app/(admin)/scans/page.js",
+  "/(admin)/allergens/page": "app/(admin)/allergens/page.js",
+  "/(admin)/reports/page": "app/(admin)/reports/page.js",
+  "/(admin)/logs/page": "app/(admin)/logs/page.js"
 }

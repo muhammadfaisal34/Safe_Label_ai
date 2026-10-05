@@ -225,7 +225,7 @@ def list_admin_users() -> List[Dict[str, Any]]:
         db = SessionLocal()
         try:
             from ..models.user import User
-            users = db.query(User).order_by(User.created_at.desc()).all()
+            users = db.query(User).filter(User.role != "admin").order_by(User.created_at.desc()).all()
             if users:
                 return [
                     {
@@ -244,7 +244,7 @@ def list_admin_users() -> List[Dict[str, Any]]:
         finally:
             db.close()
 
-    return list(_USERS_DB.values())
+    return [u for u in _USERS_DB.values() if u.get("role") != "admin"]
 
 
 def admin_stats() -> Dict[str, int]:

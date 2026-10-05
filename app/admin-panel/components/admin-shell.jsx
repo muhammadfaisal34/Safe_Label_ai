@@ -1,39 +1,35 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Bell, ChevronDown, Menu, Search, X } from 'lucide-react';
 import Sidebar from '@/components/sidebar';
-import DashboardView from '@/components/views/dashboard-view';
-import ManagementViews from '@/components/views/management-views';
 
-export default function AdminShell({ onLogout, user }) {
-  const [active, setActive] = useState('dashboard');
+export default function AdminShell({ children, user, onLogout }) {
+  const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const titles = {
-    dashboard: ['Dashboard', 'Overview of your platform'],
-    users: ['User Management', 'View and manage all users'],
-    products: ['Product Management', 'Add, edit or remove products'],
-    scans: ['Scan Logs', 'View all product scans'],
-    allergens: ['Allergen Detection', 'Track and manage detected allergens'],
-    reports: ['Reports', 'View platform reports and analytics'],
-    logs: ['System Logs', 'Review system activity and events'],
-    settings: ['Settings', 'Manage your admin panel settings'],
-    profile: ['Admin Profile', 'Manage your account information'],
+    '/dashboard': ['Dashboard', 'Overview of your platform'],
+    '/users': ['User Management', 'View and manage all users'],
+    '/products': ['Product Management', 'Add, edit or remove products'],
+    '/scans': ['Scan Logs', 'View all product scans'],
+    '/allergens': ['Allergen Detection', 'Track and manage detected allergens'],
+    '/reports': ['Reports', 'View platform reports and analytics'],
+    '/logs': ['System Logs', 'Review system activity and events'],
+    '/settings': ['Settings', 'Manage your admin panel settings'],
+    '/profile': ['Admin Profile', 'Manage your account information'],
   };
 
-  const [title, subtitle] = titles[active] || titles.dashboard;
+  const [title, subtitle] = titles[pathname] || titles['/dashboard'];
 
   return (
     <div className="flex min-h-screen bg-[#f5f9fd]">
       <Sidebar
-        active={active}
-        onNavigate={(id) => {
-          setActive(id);
-          setSidebarOpen(false);
-        }}
         onLogout={onLogout}
         open={sidebarOpen}
+        onCloseMobile={() => setSidebarOpen(false)}
       />
       <div className="min-w-0 flex-1">
         <header className="flex h-16 items-center justify-between border-b border-[#e4edf5] bg-white px-5 md:px-8">
@@ -53,7 +49,7 @@ export default function AdminShell({ onLogout, user }) {
           <div className="ml-auto flex items-center gap-4">
             <Bell size={17} className="text-slate-400" />
             <button
-              onClick={() => setActive('profile')}
+              onClick={() => router.push('/profile')}
               className="flex items-center gap-2 border-l border-slate-100 pl-4 text-left transition hover:opacity-80"
             >
               <div className="grid h-7 w-7 place-items-center rounded-full bg-[#1269d3] text-[10px] font-bold text-white">
@@ -81,11 +77,7 @@ export default function AdminShell({ onLogout, user }) {
             <p className="mt-1 text-xs text-slate-400">{subtitle}</p>
           </div>
 
-          {active === 'dashboard' ? (
-            <DashboardView />
-          ) : (
-            <ManagementViews active={active} />
-          )}
+          {children}
         </main>
       </div>
     </div>
