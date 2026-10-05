@@ -3,8 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api import admin, allergens, auth, products, scans, users
 from .core.config import settings
+from .core.database import seed_admin_user
 
 app = FastAPI(title=settings.app_name, debug=settings.debug)
+
+@app.on_event("startup")
+def startup_db_seed():
+    try:
+        seed_admin_user()
+    except Exception as e:
+        print(f"Warning seeding admin user: {e}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -26,3 +35,4 @@ app.add_api_route("/analyze", scans.analyze, methods=["POST"], tags=["scans"])
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
