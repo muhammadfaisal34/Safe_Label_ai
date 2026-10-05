@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "SafeLabel AI",
+    "slug": "safelabel-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": { "supportsTablet": false, "infoPlist": { "NSCameraUsageDescription": "SafeLabel AI scans barcodes and ingredient labels." } },
+    "android": { "permissions": ["CAMERA"] },
+    "plugins": [["expo-camera", { "cameraPermission": "SafeLabel AI scans barcodes and ingredient labels." }], "expo-image-picker", "expo-asset", "expo-status-bar"],
+    "platforms": ["ios", "android"]
+  }
+}

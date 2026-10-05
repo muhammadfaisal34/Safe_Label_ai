@@ -1,0 +1,14 @@
+{
+  "name": "safelabel-ai-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "app/mobile",
+    "app/admin-panel"
+  ],
+  "scripts": {
+    "mobile": "npm --workspace app/mobile start",
+    "admin": "npm --workspace app/admin-panel run start",
+    "build:admin": "npm --workspace app/admin-panel run build"
+  }
+}
