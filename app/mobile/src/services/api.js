@@ -108,6 +108,44 @@ export async function registerApi(email, password, name) {
   return data;
 }
 
+export async function verify2FAApi(email, code) {
+  const response = await safeFetch("/auth/verify-2fa", {
+    method: "POST",
+    body: JSON.stringify({ email, code }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const errorMsg =
+      typeof data.detail === "string"
+        ? data.detail
+        : Array.isArray(data.detail)
+          ? data.detail.map((e) => e.msg || e.message).join(", ")
+          : "2FA Verification failed";
+    throw new Error(errorMsg);
+  }
+  return data;
+}
+
+export async function resend2FAApi(email) {
+  const response = await safeFetch("/auth/resend-2fa", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const errorMsg =
+      typeof data.detail === "string"
+        ? data.detail
+        : Array.isArray(data.detail)
+          ? data.detail.map((e) => e.msg || e.message).join(", ")
+          : "Failed to resend code";
+    throw new Error(errorMsg);
+  }
+  return data;
+}
+
 export async function fetchCurrentUserApi(token) {
   const response = await safeFetch("/users/me", {
     method: "GET",

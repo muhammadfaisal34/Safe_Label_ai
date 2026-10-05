@@ -13,5 +13,18 @@ class RegisterRequest(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    access_token: str
+    access_token: str | None = None
     token_type: str = "bearer"
+    two_factor_required: bool = False
+    email: str | None = None
+    message: str | None = None
+
+
+class Verify2FARequest(BaseModel):
+    email: str
+    code: str
+
+
+class Resend2FARequest(BaseModel):
+    email: str
+

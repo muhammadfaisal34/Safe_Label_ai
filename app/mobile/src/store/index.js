@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchCurrentUserApi, loginApi, registerApi } from '../services/api';
+import { fetchCurrentUserApi, loginApi, registerApi, verify2FAApi } from '../services/api';
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
@@ -90,6 +90,10 @@ export function AppProvider({ children }) {
 
   const login = async (email, password) => {
     const authRes = await loginApi(email, password);
+    if (authRes.two_factor_required) {
+      return authRes;
+    }
+
     const jwtToken = authRes.access_token;
     await AsyncStorage.setItem('safelabel_token', jwtToken);
     setToken(jwtToken);
@@ -111,6 +115,10 @@ export function AppProvider({ children }) {
 
   const register = async (name, email, password) => {
     const authRes = await registerApi(email, password, name);
+    if (authRes.two_factor_required) {
+      return authRes;
+    }
+
     const jwtToken = authRes.access_token;
     await AsyncStorage.setItem('safelabel_token', jwtToken);
     setToken(jwtToken);
@@ -123,15 +131,37 @@ export function AppProvider({ children }) {
       role: dbUser.role,
     };
     setUser(nextUser);
-    // Reset user-specific state for clean new account
     setProfile([]);
     setHistory([]);
     setSavedProducts([]);
     setLoggedIn(true);
 
-    // Persist empty profile for new user
     persistData({ profile: [], history: [], savedProducts: [] }, dbUser.id);
-    // Trigger onboarding allergy picker modal for new user
+    setShowOnboardingAllergies(true);
+
+    return nextUser;
+  };
+
+  const verify2FA = async (email, code) => {
+    const authRes = await verify2FAApi(email, code);
+    const jwtToken = authRes.access_token;
+    await AsyncStorage.setItem('safelabel_token', jwtToken);
+    setToken(jwtToken);
+
+    const dbUser = await fetchCurrentUserApi(jwtToken);
+    const nextUser = {
+      id: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.display_name || dbUser.name || 'User',
+      role: dbUser.role,
+    };
+    setUser(nextUser);
+    setProfile([]);
+    setHistory([]);
+    setSavedProducts([]);
+    setLoggedIn(true);
+
+    persistData({ profile: [], history: [], savedProducts: [] }, dbUser.id);
     setShowOnboardingAllergies(true);
 
     return nextUser;
@@ -201,6 +231,7 @@ export function AppProvider({ children }) {
     showOnboardingAllergies,
     login,
     register,
+    verify2FA,
     logout,
     toggleAllergen,
     addScan,

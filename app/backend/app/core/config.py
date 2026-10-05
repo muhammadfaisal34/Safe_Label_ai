@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me-in-production"
     access_token_expire_minutes: int = 60
     max_upload_bytes: int = 10 * 1024 * 1024
+    resend_api_key: str = ""
+    resend_from_email: str = "SafeLabel AI <onboarding@resend.dev>"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property

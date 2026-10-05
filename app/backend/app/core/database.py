@@ -31,6 +31,62 @@ def get_db():
         db.close()
 
 
+from datetime import datetime, timezone, timedelta
+import random
+
+_2FA_CODES: Dict[str, Dict[str, Any]] = {}
+
+
+def generate_2fa_code(email: str) -> str:
+    clean_email = email.lower().strip()
+    code = f"{random.randint(100000, 999999)}"
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    _2FA_CODES[clean_email] = {
+        "code": code,
+        "expires_at": expires_at,
+    }
+    return code
+
+
+def verify_2fa_code(email: str, code: str) -> bool:
+    clean_email = email.lower().strip()
+    data = _2FA_CODES.get(clean_email)
+    if not data:
+        return False
+    if datetime.now(timezone.utc) > data["expires_at"]:
+        del _2FA_CODES[clean_email]
+        return False
+    if data["code"].strip() == code.strip():
+        del _2FA_CODES[clean_email]
+        update_user_status(clean_email, "active")
+        return True
+    return False
+
+
+def update_user_status(email_or_id: str, new_status: str = "active") -> bool:
+    clean_identifier = email_or_id.lower().strip()
+    updated = False
+    if SessionLocal:
+        db = SessionLocal()
+        try:
+            from ..models.user import User
+            u = db.query(User).filter(func.lower(User.email) == clean_identifier).first()
+            if u:
+                u.status = new_status
+                db.commit()
+                updated = True
+        except Exception:
+            db.rollback()
+        finally:
+            db.close()
+
+    for user in _USERS_DB.values():
+        if user["email"].lower() == clean_identifier or user["id"] == email_or_id:
+            user["status"] = new_status
+            updated = True
+    return updated
+
+
 # In-memory fallback dictionary for offline/test mode
 _DEFAULT_ADMIN_ID = "admin-1"
 _DEFAULT_ADMIN = {
