@@ -143,12 +143,31 @@ export function AppProvider({ children }) {
   };
 
   const verify2FA = async (email, code) => {
-    const authRes = await verify2FAApi(email, code);
+    let fn = verify2FAApi;
+    if (typeof fn !== 'function') {
+      try {
+        const apiMod = require('../services/api');
+        fn = apiMod.verify2FAApi;
+      } catch (e) {}
+    }
+    if (typeof fn !== 'function') {
+      throw new Error('Verification service unavailable. Please refresh or restart the app.');
+    }
+
+    const authRes = await fn(email, code);
     const jwtToken = authRes.access_token;
     await AsyncStorage.setItem('safelabel_token', jwtToken);
     setToken(jwtToken);
 
-    const dbUser = await fetchCurrentUserApi(jwtToken);
+    let fetchFn = fetchCurrentUserApi;
+    if (typeof fetchFn !== 'function') {
+      try {
+        const apiMod = require('../services/api');
+        fetchFn = apiMod.fetchCurrentUserApi;
+      } catch (e) {}
+    }
+
+    const dbUser = await fetchFn(jwtToken);
     const nextUser = {
       id: dbUser.id,
       email: dbUser.email,

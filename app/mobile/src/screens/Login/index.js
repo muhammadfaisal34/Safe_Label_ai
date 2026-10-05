@@ -113,7 +113,17 @@ export default function Login() {
     setInfoMessage('');
     setLoading(true);
     try {
-      const res = await resend2FAApi(twoFactorEmail);
+      let resendFn = resend2FAApi;
+      if (typeof resendFn !== 'function') {
+        try {
+          const apiMod = require('../../services/api');
+          resendFn = apiMod.resend2FAApi;
+        } catch (e) {}
+      }
+      if (typeof resendFn !== 'function') {
+        throw new Error('Resend service unavailable. Please refresh or restart the app.');
+      }
+      const res = await resendFn(twoFactorEmail);
       setInfoMessage(res.message || 'A new 2FA verification code has been sent to your email.');
     } catch (err) {
       setError(err.message || 'Failed to resend code. Please try again.');

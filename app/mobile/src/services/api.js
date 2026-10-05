@@ -66,7 +66,7 @@ async function safeFetch(path, options = {}) {
   }
 
   throw new Error(
-    `Unable to connect to backend at ${API_URL}. Please ensure your FastAPI server is running with: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+    `Unable to connect to backend at ${API_URL}. Please ensure your FastAPI server is running with: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`,
   );
 }
 
@@ -121,7 +121,7 @@ export async function verify2FAApi(email, code) {
         ? data.detail
         : Array.isArray(data.detail)
           ? data.detail.map((e) => e.msg || e.message).join(", ")
-          : "2FA Verification failed";
+          : "Verification failed";
     throw new Error(errorMsg);
   }
   return data;

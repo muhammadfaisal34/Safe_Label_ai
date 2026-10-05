@@ -108,10 +108,19 @@ def send_2fa_email(to_email: str, code: str) -> dict:
             }
         else:
             logger.error(f"Resend API error status {response.status_code}: {response.text}")
-            print(f"\n[RESEND API ERROR]: {response.text}\n")
+            print(f"\n[RESEND API ERROR {response.status_code}]: {response.text}\n")
+            reason_str = f"Resend API status {response.status_code}"
+            if response.status_code == 403 and "only send testing emails" in response.text:
+                print("==========================================================================")
+                print("[RESEND TESTING LIMITATION]: 'onboarding@resend.dev' can only send emails to")
+                print("the registered Resend account address (deve.devhub@gmail.com).")
+                print(f"For other emails (e.g. {to_email}), use Dev Code: {code}")
+                print("==========================================================================\n")
+                reason_str = "Resend test domain restricted to deve.devhub@gmail.com"
+
             return {
                 "sent": False,
-                "reason": f"Resend API status {response.status_code}",
+                "reason": reason_str,
                 "message": f"Verification code generated. (Dev Code: {code})",
                 "dev_code": code,
             }
