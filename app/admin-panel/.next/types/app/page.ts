@@ -1,4 +1,4 @@
-// File: D:\uni\FYP\SafeLabelAIm\SafeLabelAI\app\admin-panel\app\page.jsx
+// File: D:\uni\FYP\Safe_Label_ai\app\admin-panel\app\page.jsx
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
