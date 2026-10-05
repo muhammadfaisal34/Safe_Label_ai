@@ -24,7 +24,12 @@ def register(request: RegisterRequest) -> TokenResponse:
     if len(request.password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     try:
-        user = create_user(str(uuid4()), email, hash_password(request.password))
+        user = create_user(
+            user_id=str(uuid4()),
+            email=email,
+            password_hash=hash_password(request.password),
+            display_name=request.display_name or "User",
+        )
     except UniqueViolation as error:
         raise HTTPException(status_code=409, detail="Email is already registered") from error
     return TokenResponse(access_token=create_access_token(str(user["id"]), user["email"]))

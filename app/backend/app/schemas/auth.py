@@ -6,8 +6,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class RegisterRequest(LoginRequest):
-    pass
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    display_name: str | None = "User"
 
 
 class TokenResponse(BaseModel):
