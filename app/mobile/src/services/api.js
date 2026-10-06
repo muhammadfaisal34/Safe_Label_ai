@@ -1,6 +1,7 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { ALLERGENS } from "../utils/data";
+import { File } from "expo-file-system";
 
 const getBaseUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL) {
@@ -49,15 +50,18 @@ async function safeFetch(path, options = {}) {
   ];
   const uniqueUrls = [...new Set(urlsToTry.filter(Boolean))];
 
+  const isFormData = options.isFormData || options.body instanceof FormData;
+  const defaultHeaders = isFormData
+    ? {}
+    : { "Content-Type": "application/json" };
+  const reqHeaders = { ...defaultHeaders, ...(options.headers || {}) };
+
   let lastError = null;
   for (const baseUrl of uniqueUrls) {
     try {
       const response = await fetch(`${baseUrl}${path}`, {
         ...options,
-        headers: {
-          "Content-Type": "application/json",
-          ...(options.headers || {}),
-        },
+        headers: reqHeaders,
       });
       return response;
     } catch (err) {
@@ -205,36 +209,31 @@ export async function lookupBarcode(code) {
 export async function ocrImage(uri) {
   try {
     const form = new FormData();
-    form.append("file", { uri, name: "label.jpg", type: "image/jpeg" });
+    form.append("file", new File(uri));
+
     const response = await safeFetch("/ocr", {
       method: "POST",
-      headers: {}, // Let fetch set boundary
+      isFormData: true,
       body: form,
     });
     if (response.ok) {
       const result = await response.json();
-      return {
-        name: "Scanned label",
-        brand: "",
-        image: uri,
-        text: result.text,
-        lang: result.lang,
-        source: "ocr",
-      };
+      if (result?.text && result.text.trim()) {
+        return {
+          name: "Scanned label",
+          brand: "",
+          image: uri,
+          text: result.text.trim(),
+          lang: result.lang || "en",
+          source: "ocr",
+        };
+      }
     }
   } catch (e) {
-    // Fallback if local server offline
+    console.warn("OCR API call error:", e.message);
   }
-
-  await wait(900);
-  return {
-    name: "Scanned label",
-    brand: "",
-    image: uri,
-    text: "Zutaten: Weizenmehl, Zucker, Erdnüsse, Magermilchpulver, Sojalecithin, Salz. Kann Spuren von Haselnüssen enthalten.",
-    lang: "de",
-    source: "ocr",
-  };
+  console.warn("OCR returned no usable text, try again.");
+  return null;
 }
 
 const TRACE = /(spuren|traces?|may contain|kann|peut contenir|puede contener)/i;
@@ -246,6 +245,7 @@ export async function analyze(product, profile) {
     });
     if (response.ok) {
       const data = await response.json();
+      console.log("ANALYZE from backend:", JSON.stringify(data));
       return {
         id: String(Date.now()),
         date: Date.now(),
@@ -253,8 +253,9 @@ export async function analyze(product, profile) {
         ...data,
       };
     }
+    console.warn("ANALYZE non-ok status:", response.status);
   } catch (e) {
-    // Fallback
+    console.warn("ANALYZE error, using local fallback:", e.message);
   }
 
   await wait(600);

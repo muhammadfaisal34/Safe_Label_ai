@@ -1,38 +1,21 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import sys
+from pathlib import Path
 
-from .api import admin, allergens, auth, products, scans, users
-from .core.config import settings
-from .core.database import seed_admin_user
+_backend_dir = Path(__file__).resolve().parents[1]
+_workspace_root = _backend_dir.parent.parent
 
-app = FastAPI(title=settings.app_name, debug=settings.debug)
+for _path in (str(_workspace_root), str(_backend_dir)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
-@app.on_event("startup")
-def startup_db_seed():
-    try:
-        seed_admin_user()
-    except Exception as e:
-        print(f"Warning seeding admin user: {e}")
+try:
+    from app.backend.main import app
+except (ModuleNotFoundError, ImportError):
+    import main
+    app = main.app
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(admin.router)
-app.include_router(scans.router)
-app.include_router(products.router)
-app.include_router(allergens.router)
-app.add_api_route("/ocr", scans.ocr, methods=["POST"], tags=["scans"])
-app.add_api_route("/analyze", scans.analyze, methods=["POST"], tags=["scans"])
+__all__ = ["app"]
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+
 

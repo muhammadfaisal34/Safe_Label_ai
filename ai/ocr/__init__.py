@@ -1,1 +1,0 @@
-"""OCR model integration boundary."""

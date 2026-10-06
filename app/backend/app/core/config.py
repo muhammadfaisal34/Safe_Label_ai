@@ -6,7 +6,8 @@ class Settings(BaseSettings):
     debug: bool = True
     cors_origins: str = "*"
     database_url: str = "postgresql://safelabel:safelabel@localhost:5432/safelabel"
-    jwt_secret: str = "change-me-in-production"
+    jwt_secret: str = "change-me-in-production-secret-key-32bytes"
+
     access_token_expire_minutes: int = 60
     max_upload_bytes: int = 10 * 1024 * 1024
     resend_api_key: str = "re_HTM52ixC_GR1rW2HswhtJqDXrwBqihmBm"

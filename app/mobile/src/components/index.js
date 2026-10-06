@@ -32,8 +32,16 @@ export const Verdict = {
     icon: "❗",
     title: "Possible trace match",
   },
+  warning: {
+    bg: C.warnBg,
+    fg: C.warn,
+    icon: "❗",
+    title: "Possible trace match",
+  },
   none: { bg: C.safeBg, fg: C.safe, icon: "✓", title: "Product is safe" },
+  safe: { bg: C.safeBg, fg: C.safe, icon: "✓", title: "Product is safe" },
 };
+
 
 export function AllergenPicker({ profile, onToggle }) {
   return (

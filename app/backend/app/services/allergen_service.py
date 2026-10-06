@@ -1,5 +1,8 @@
-from .nlp_service import ALLERGEN_TERMS
+try:
+    from app.backend.ai.allergen_detection.allergens import list_allergens
+except (ModuleNotFoundError, ImportError):
+    from ai.allergen_detection.allergens import list_allergens
+
+__all__ = ["list_allergens"]
 
 
-def list_allergens() -> list[dict[str, object]]:
-    return [{"id": key, "terms": list(terms)} for key, terms in ALLERGEN_TERMS.items()]

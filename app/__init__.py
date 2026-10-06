@@ -1,1 +1,0 @@
-# SafeLabel AI App package

@@ -49,8 +49,9 @@ export default function History({ navigation }) {
           </Text>
         }
         renderItem={({ item: h }) => {
-          const v = Verdict[h.verdict];
+          const v = Verdict[h.verdict] || Verdict.safe || Verdict.none;
           return (
+
             <Pressable
               style={s.card}
               onPress={() => navigation.navigate("Result", { result: h })}

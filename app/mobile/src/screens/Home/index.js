@@ -131,7 +131,10 @@ export default function Home({ navigation }) {
         {profile.length ? (
           <View style={s.wrap}>
             {profile.map((id) => {
-              const a = ALLERGENS.find((x) => x.id === id);
+              const a = ALLERGENS.find((x) => x.id === id || x.id === id?.replace(/s$/, '')) || {
+                icon: "⚠️",
+                label: id ? id.charAt(0).toUpperCase() + id.slice(1) : "Allergen",
+              };
               return (
                 <View
                   key={id}
@@ -145,6 +148,7 @@ export default function Home({ navigation }) {
                 </View>
               );
             })}
+
           </View>
         ) : (
           <View style={s.card}>
@@ -164,8 +168,9 @@ export default function Home({ navigation }) {
           </View>
         )}
         {history.slice(0, 3).map((h) => {
-          const v = Verdict[h.verdict];
+          const v = Verdict[h.verdict] || Verdict.safe || Verdict.none;
           return (
+
             <Pressable
               key={h.id}
               style={s.card}

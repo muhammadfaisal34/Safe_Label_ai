@@ -44,7 +44,7 @@ function Root() {
 	return <NavigationContainer><Stack.Navigator screenOptions={{ headerTintColor: C.ink }}>
 		<Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
 		<Stack.Screen name="Scan" component={Scan} options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-		<Stack.Screen name="Result" component={Result} options={{ title: 'Scan result' }} />
+		<Stack.Screen name="Result" component={Result} options={{ headerShown: false }} />
 	</Stack.Navigator></NavigationContainer>;
 }
 
