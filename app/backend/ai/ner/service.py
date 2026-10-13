@@ -2,6 +2,15 @@ import re
 
 from .model import get_nlp
 
+try:
+    from app.backend.ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+except (ModuleNotFoundError, ImportError):
+    try:
+        from ..ocr.extractor import extract_ingredients_text, split_into_ingredients
+    except (ModuleNotFoundError, ImportError):
+        from ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+
+
 CATEGORY_NORM = {
     "peanuts": "peanut",
     "eggs": "egg",
@@ -67,10 +76,14 @@ def analyze_text(text: str, profile: list[str] | None = None) -> dict:
     if profile is None:
         profile = []
 
-    clean_text = " ".join(text.split())
+    ing_text = extract_ingredients_text(text) or text
+    clean_text = " ".join(ing_text.split())
     doc = get_nlp()(clean_text)
 
-    ingredients = [i.strip() for i in re.split(r"[,;\n]+", text) if i.strip()]
+    ingredients = split_into_ingredients(ing_text)
+    if not ingredients:
+        ingredients = [i.strip() for i in re.split(r"[,;\n]+", ing_text) if i.strip()]
+
 
     entities = []
     findings = []
@@ -135,4 +148,5 @@ def analyze_text(text: str, profile: list[str] | None = None) -> dict:
         "mine": mine,
         "verdict": verdict,
         "entities": entities,
+        "ingredients_text": ing_text,
     }

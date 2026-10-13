@@ -5,11 +5,13 @@ from pydantic import BaseModel
 from ..core.database import (
     admin_reports,
     admin_stats,
+    clear_admin_scans,
     create_admin_product,
     create_or_update_allergen,
     create_system_log,
     create_user,
     delete_admin_product,
+    delete_admin_scan,
     delete_allergen,
     delete_user,
     list_admin_allergens,
@@ -17,6 +19,8 @@ from ..core.database import (
     list_admin_scans,
     list_admin_users,
     list_system_logs,
+    record_scan,
+    seed_initial_scans_and_catalog,
 )
 from ..core.security import hash_password, require_bearer_token
 
@@ -43,6 +47,18 @@ class CreateAllergenRequest(BaseModel):
     id: str
     name: str
     terms: list[str] = []
+
+
+class CreateScanRequest(BaseModel):
+    product_name: str | None = None
+    barcode: str | None = None
+    extracted_text: str = ""
+    language: str = "en"
+    source: str = "ocr"
+    verdict: str = "safe"
+    detected_allergens: list[str] = []
+    user_name: str | None = None
+    user_email: str | None = None
 
 
 class LogEntryRequest(BaseModel):
@@ -136,6 +152,40 @@ def get_scans() -> list[dict]:
     return list_admin_scans()
 
 
+@router.post("/scans", status_code=status.HTTP_201_CREATED)
+def create_scan(request: CreateScanRequest) -> dict:
+    return record_scan(
+        product_name=request.product_name,
+        barcode=request.barcode,
+        extracted_text=request.extracted_text,
+        language=request.language,
+        source=request.source,
+        verdict=request.verdict,
+        detected_allergens=request.detected_allergens,
+        user_email=request.user_email,
+    )
+
+
+@router.delete("/scans/{scan_id}")
+def remove_scan(scan_id: str) -> dict[str, str]:
+    success = delete_admin_scan(scan_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Scan record not found")
+    return {"message": "Scan record deleted successfully"}
+
+
+@router.delete("/scans")
+def remove_all_scans() -> dict[str, str]:
+    clear_admin_scans()
+    return {"message": "All scan records cleared successfully"}
+
+
+@router.post("/scans/seed")
+def seed_scans() -> list[dict]:
+    seed_initial_scans_and_catalog(force=True)
+    return list_admin_scans()
+
+
 @router.get("/allergens")
 def get_allergens() -> list[dict]:
     return list_admin_allergens()
@@ -162,8 +212,12 @@ def remove_allergen(allergen_id: str) -> dict[str, str]:
 
 
 @router.get("/reports")
-def get_reports() -> dict:
-    return admin_reports()
+def get_reports(
+    days: int | None = None,
+    verdict: str | None = None,
+    source: str | None = None,
+) -> dict:
+    return admin_reports(days=days, verdict=verdict, source=source)
 
 
 @router.get("/logs")

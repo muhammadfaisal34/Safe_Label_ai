@@ -81,6 +81,31 @@ export function getAdminScans() {
   return request('/admin/scans');
 }
 
+export function createAdminScan(data) {
+  return request('/admin/scans', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteAdminScan(id) {
+  return request(`/admin/scans/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export function clearAdminScans() {
+  return request('/admin/scans', {
+    method: 'DELETE',
+  });
+}
+
+export function seedAdminScans() {
+  return request('/admin/scans/seed', {
+    method: 'POST',
+  });
+}
+
 export function getAdminAllergens() {
   return request('/admin/allergens');
 }
@@ -98,8 +123,13 @@ export function deleteAdminAllergen(id) {
   });
 }
 
-export function getAdminReports() {
-  return request('/admin/reports');
+export function getAdminReports(params = {}) {
+  const query = new URLSearchParams();
+  if (params.days) query.set('days', params.days);
+  if (params.verdict && params.verdict !== 'all') query.set('verdict', params.verdict);
+  if (params.source && params.source !== 'all') query.set('source', params.source);
+  const qStr = query.toString();
+  return request(`/admin/reports${qStr ? `?${qStr}` : ''}`);
 }
 
 export function getAdminLogs() {

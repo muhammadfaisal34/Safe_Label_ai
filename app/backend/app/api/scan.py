@@ -39,4 +39,19 @@ async def scan(image: UploadFile = File(...), lang: str = Form("en")):
     if tr["error"]:
         warnings.append(tr["error"])
 
+    try:
+        from ..core.database import record_scan
+        detected = [e["allergen"] for e in entities if e.get("allergen")]
+        verdict = "danger" if detected else "safe"
+        record_scan(
+            product_name="Scanned Label",
+            extracted_text=ocr.get("text", ""),
+            language=lang,
+            source="ocr",
+            verdict=verdict,
+            detected_allergens=detected,
+        )
+    except Exception:
+        pass
+
     return {"ocr": ocr, "translation": tr, "entities": entities, "warnings": warnings}

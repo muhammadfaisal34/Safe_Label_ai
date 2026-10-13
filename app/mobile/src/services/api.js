@@ -224,6 +224,8 @@ export async function ocrImage(uri) {
           brand: "",
           image: uri,
           text: result.text.trim(),
+          ingredients: result.ingredients || [],
+          raw_text: result.raw_text,
           lang: result.lang || "en",
           source: "ocr",
         };
@@ -237,17 +239,32 @@ export async function ocrImage(uri) {
 }
 
 const TRACE = /(spuren|traces?|may contain|kann|peut contenir|puede contener)/i;
-export async function analyze(product, profile) {
+export async function analyze(product, profile, token = null, user = null) {
   try {
+    const headers = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const body = {
+      text: product.text,
+      lang: product.lang || "en",
+      profile: profile || [],
+      product_name: product.name,
+      barcode: product.barcode,
+      source: product.source || "ocr",
+      user_id: user?.id,
+      user_email: user?.email,
+    };
     const response = await safeFetch("/analyze", {
       method: "POST",
-      body: JSON.stringify({ text: product.text, lang: product.lang, profile }),
+      headers,
+      body: JSON.stringify(body),
     });
     if (response.ok) {
       const data = await response.json();
       console.log("ANALYZE from backend:", JSON.stringify(data));
       return {
-        id: String(Date.now()),
+        id: data.scan_id || String(Date.now()),
         date: Date.now(),
         product,
         ...data,

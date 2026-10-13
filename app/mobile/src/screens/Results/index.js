@@ -201,15 +201,23 @@ export default function Results({ route, navigation }) {
 						INGREDIENTS
 					</Text>
 					<Text style={{ fontSize: 13, color: '#4B5563', lineHeight: 20, marginBottom: 12 }}>
-						{product.text || (ingredients.length > 0 ? ingredients.join(', ') : 'No raw ingredient text extracted.')}
+						{result?.ingredients_text || product.text || (ingredients.length > 0 ? ingredients.join(', ') : 'No raw ingredient text extracted.')}
 					</Text>
 
 					{/* Extracted Ingredient Chips */}
 					{ingredients.length > 0 && (
 						<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
 							{ingredients.map((item, idx) => {
-								const isMineMatch = mineFindings.some((f) => f.ingredient.toLowerCase() === item.toLowerCase());
-								const isOtherMatch = otherFindings.some((f) => f.ingredient.toLowerCase() === item.toLowerCase());
+								const itemLow = item.toLowerCase();
+								const isMineMatch = mineFindings.some((f) => {
+									const fIng = f.ingredient.toLowerCase();
+									return fIng === itemLow || itemLow.includes(fIng) || fIng.includes(itemLow);
+								});
+								const isOtherMatch = !isMineMatch && otherFindings.some((f) => {
+									const fIng = f.ingredient.toLowerCase();
+									return fIng === itemLow || itemLow.includes(fIng) || fIng.includes(itemLow);
+								});
+
 
 								const chipBg = isMineMatch ? '#FDF1F0' : isOtherMatch ? '#FFF4D9' : '#F8FAFC';
 								const chipBorder = isMineMatch ? '#EB4D3D' : isOtherMatch ? '#F59E0B' : '#E2E8F0';

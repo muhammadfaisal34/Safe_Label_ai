@@ -9,6 +9,7 @@ except (ModuleNotFoundError, ImportError):
     from ..translation.detect import detect_language
 
 from .engine import get_engine
+from .extractor import extract_ingredients_from_ocr
 from .preprocess import bytes_to_pil_image, pil_to_bgr_array
 
 LOW_CONFIDENCE_THRESHOLD = 0.60
@@ -73,14 +74,10 @@ def _recognize(img: Image.Image, lang: str) -> dict:
     extracted_text = "\n".join(l["text"] for l in lines)
     detected_lang = detect_language(extracted_text) if extracted_text else lang
 
-    avg = sum(l["confidence"] for l in lines) / len(lines) if lines else 0.0
-    return {
-        "text": extracted_text,
-        "lang": detected_lang,
-        "lines": lines,
-        "avg_confidence": round(avg, 3),
-        "low_confidence": avg < LOW_CONFIDENCE_THRESHOLD or not lines,
-    }
+    result = extract_ingredients_from_ocr(lines, extracted_text, lang=detected_lang)
+    result["lang"] = detected_lang
+    return result
+
 
 
 async def extract_text(file_bytes: bytes, lang: str = "en") -> dict:

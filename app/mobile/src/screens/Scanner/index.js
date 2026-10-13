@@ -21,7 +21,7 @@ export default function Scanner({ navigation }) {
 	const [busy, setBusy] = useState(null);
 	const cam = useRef(null);
 	const locked = useRef(false);
-	const { profile, addScan } = useApp();
+	const { profile, user, token, addScan } = useApp();
 
 	// Animated values for scanner loading ring & pulse
 	const spinValue = useRef(new Animated.Value(0)).current;
@@ -75,7 +75,7 @@ export default function Scanner({ navigation }) {
 			setBusy(i);
 			await new Promise((resolve) => setTimeout(resolve, 400));
 		}
-		const result = await analyze(product, profile);
+		const result = await analyze(product, profile, token, user);
 		addScan(result);
 		setBusy(null);
 		navigation.replace('Result', { result });

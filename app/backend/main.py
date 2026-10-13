@@ -14,11 +14,11 @@ from fastapi.middleware.cors import CORSMiddleware
 try:
     from app.backend.app.api import admin, allergens, auth, products, scan, scans, users
     from app.backend.app.core.config import settings
-    from app.backend.app.core.database import seed_admin_user
+    from app.backend.app.core.database import seed_admin_user, seed_initial_scans_and_catalog
 except (ModuleNotFoundError, ImportError):
     from app.api import admin, allergens, auth, products, scan, scans, users
     from app.core.config import settings
-    from app.core.database import seed_admin_user
+    from app.core.database import seed_admin_user, seed_initial_scans_and_catalog
 
 
 
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
     try:
         seed_admin_user()
     except Exception as e:
-        print(f"Warning seeding admin user: {e}")
+        print(f"Warning during startup seeding: {e}")
     yield
 
 
