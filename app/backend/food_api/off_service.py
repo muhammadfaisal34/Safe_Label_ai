@@ -7,19 +7,22 @@ import time
 import httpx
 
 try:
-    from app.backend.ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+    from app.backend.ai.ocr.extractor import extract_ingredients_text, extract_english_portion, split_into_ingredients
+    from app.backend.ai.translation.service import to_english
 except (ModuleNotFoundError, ImportError):
     try:
-        from ..ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+        from ..ai.ocr.extractor import extract_ingredients_text, extract_english_portion, split_into_ingredients
+        from ..ai.translation.service import to_english
     except (ModuleNotFoundError, ImportError):
-        from ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+        from ai.ocr.extractor import extract_ingredients_text, extract_english_portion, split_into_ingredients
+        from ai.translation.service import to_english
 
 BASE_URL = "https://world.openfoodfacts.org/api/v2/product"
 
 # For testing use staging: "https://world.openfoodfacts.net/api/v2/product"
 HEADERS = {"User-Agent": "SafeLabelAI/1.0 (your-email@example.com)"}  # change this
 FIELDS = ",".join([
-    "code", "product_name", "brands", "ingredients_text",
+    "code", "product_name", "brands", "ingredients_text", "ingredients_text_en",
     "allergens_tags", "traces_tags", "additives_tags",
     "nutriscore_grade", "nova_group", "image_front_url",
 ])
@@ -88,10 +91,26 @@ async def analyze_barcode(barcode: str, user_allergens: list[str]) -> dict:
             "barcode": barcode,
             "message": "Product not in database. Check the physical label.",
         }
-    raw_ing = product.get("ingredients_text") or ""
-    clean_ing = extract_ingredients_text(raw_ing) if raw_ing else ""
-    if not clean_ing and raw_ing:
-        clean_ing = raw_ing.strip()
+    product_name = product.get("product_name") or ""
+    raw_ing = product.get("ingredients_text_en")
+    if not raw_ing or not str(raw_ing).strip():
+        raw_ing = product.get("ingredients_text") or ""
+
+    english_portion = extract_english_portion(raw_ing, product_name)
+    if english_portion:
+        clean_ing = extract_ingredients_text(english_portion) or english_portion.strip()
+    else:
+        clean_ing = extract_ingredients_text(raw_ing) if raw_ing else ""
+        if not clean_ing and raw_ing:
+            clean_ing = raw_ing.strip()
+        if clean_ing:
+            try:
+                tr = await to_english(clean_ing)
+                if tr.get("text"):
+                    clean_ing = extract_ingredients_text(tr["text"]) or tr["text"].strip()
+            except Exception:
+                pass
+
     ing_list = split_into_ingredients(clean_ing)
 
     return {
@@ -102,7 +121,8 @@ async def analyze_barcode(barcode: str, user_allergens: list[str]) -> dict:
         "image": product.get("image_front_url"),
         "ingredients_text": clean_ing,
         "ingredients": ing_list,
-        "raw_ingredients_text": raw_ing,
+        "raw_ingredients_text": clean_ing,
+        "lang": "en",
         "nutriscore": product.get("nutriscore_grade"),
         "nova_group": product.get("nova_group"),
         "safety": check_safety(product, user_allergens),

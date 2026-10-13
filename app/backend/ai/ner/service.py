@@ -4,12 +4,12 @@ import time
 from .model import get_nlp
 
 try:
-    from app.backend.ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+    from app.backend.ai.ocr.extractor import extract_ingredients_text, extract_english_portion, split_into_ingredients
 except (ModuleNotFoundError, ImportError):
     try:
-        from ..ocr.extractor import extract_ingredients_text, split_into_ingredients
+        from ..ocr.extractor import extract_ingredients_text, extract_english_portion, split_into_ingredients
     except (ModuleNotFoundError, ImportError):
-        from ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+        from ai.ocr.extractor import extract_ingredients_text, extract_english_portion, split_into_ingredients
 
 
 CATEGORY_NORM = {
@@ -91,13 +91,17 @@ def analyze_text(text: str, profile: list[str] | None = None) -> dict:
     preview_clean = preview.replace("\n", " ")
     print(f"  \033[93m[>>] [NER ENGINE] Running spaCy model on {len(text)} chars (\"{preview_clean}\")...\033[0m", flush=True)
 
+    eng = extract_english_portion(text)
+    if eng:
+        text = eng
+
     ing_text = extract_ingredients_text(text) or text
     clean_text = " ".join(ing_text.split())
     doc = get_nlp()(clean_text)
 
     ingredients = split_into_ingredients(ing_text)
     if not ingredients:
-        ingredients = [i.strip() for i in re.split(r"[,;\n]+", ing_text) if i.strip()]
+        ingredients = [i.strip() for i in re.split(r"[,;\n]+", ing_text) if i.strip() and not re.search(r"[\u0600-\u06FF]", i) and re.search(r"[A-Za-z]", i)]
 
 
     entities = []

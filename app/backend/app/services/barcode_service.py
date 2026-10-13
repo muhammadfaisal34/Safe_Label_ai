@@ -1,16 +1,16 @@
 import httpx
 
 try:
-    from app.backend.ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+    from app.backend.ai.ocr.extractor import extract_ingredients_text, extract_english_portion, split_into_ingredients
     from app.backend.ai.translation.detect import is_english
     from app.backend.ai.translation.service import to_english
 except (ModuleNotFoundError, ImportError):
     try:
-        from ...ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+        from ...ai.ocr.extractor import extract_ingredients_text, extract_english_portion, split_into_ingredients
         from ...ai.translation.detect import is_english
         from ...ai.translation.service import to_english
     except (ModuleNotFoundError, ImportError):
-        from ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+        from ai.ocr.extractor import extract_ingredients_text, extract_english_portion, split_into_ingredients
         from ai.translation.detect import is_english
         from ai.translation.service import to_english
 
@@ -26,12 +26,22 @@ async def lookup_barcode(code: str) -> dict | None:
     if payload.get("status") != 1:
         return None
     product = payload.get("product", {})
-    raw_ing = product.get("ingredients_text_en") or product.get("ingredients_text")
+    product_name = product.get("product_name") or ""
+
+    # Prefer explicit English ingredients text if available
+    raw_ing = product.get("ingredients_text_en")
+    if not raw_ing or not str(raw_ing).strip():
+        raw_ing = product.get("ingredients_text")
     if not raw_ing:
         return None
 
-    clean_ing = extract_ingredients_text(raw_ing) or raw_ing.strip()
-    if not is_english(clean_ing):
+    # Check for bilingual content: if English exists, use English ONLY
+    english_portion = extract_english_portion(raw_ing, product_name)
+    if english_portion:
+        clean_ing = extract_ingredients_text(english_portion) or english_portion.strip()
+    else:
+        # No English found: use translation to English
+        clean_ing = extract_ingredients_text(raw_ing) or raw_ing.strip()
         try:
             tr = await to_english(clean_ing)
             if tr.get("text"):
@@ -39,9 +49,10 @@ async def lookup_barcode(code: str) -> dict | None:
         except Exception:
             pass
 
-    product["raw_ingredients_text"] = product.get("ingredients_text") or raw_ing
+    product["raw_ingredients_text"] = clean_ing
     product["ingredients_text"] = clean_ing
     product["ingredients"] = split_into_ingredients(clean_ing)
+    product["lang"] = "en"
     return product
 
 

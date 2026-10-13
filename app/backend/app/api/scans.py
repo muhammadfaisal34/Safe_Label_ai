@@ -69,17 +69,36 @@ async def analyze(
     t_start = time.perf_counter()
 
     input_text = request.text
-    if not is_english(input_text):
+    try:
+        from app.backend.ai.ocr.extractor import extract_english_portion
+    except (ModuleNotFoundError, ImportError):
         try:
-            tr = await to_english(input_text)
-            if tr.get("text"):
-                input_text = tr["text"]
-        except Exception:
-            pass
+            from ...ai.ocr.extractor import extract_english_portion
+        except (ModuleNotFoundError, ImportError):
+            from ai.ocr.extractor import extract_english_portion
+
+    english_portion = extract_english_portion(input_text, request.product_name or "")
+    if english_portion:
+        input_text = english_portion
+    else:
+        try:
+            from app.backend.ai.ocr.extractor import NON_LATIN_SCRIPT_RE
+        except (ModuleNotFoundError, ImportError):
+            try:
+                from ...ai.ocr.extractor import NON_LATIN_SCRIPT_RE
+            except (ModuleNotFoundError, ImportError):
+                from ai.ocr.extractor import NON_LATIN_SCRIPT_RE
+
+        if not is_english(input_text) or NON_LATIN_SCRIPT_RE.search(input_text):
+            try:
+                tr = await to_english(input_text)
+                if tr.get("text"):
+                    input_text = tr["text"]
+            except Exception:
+                pass
 
     analysis = analyze_text(input_text, request.profile)
     elapsed = time.perf_counter() - t_start
-
 
     user_id = request.user_id
     user_email = request.user_email
@@ -101,8 +120,8 @@ async def analyze(
     scan_rec = record_scan(
         product_name=request.product_name,
         barcode=request.barcode,
-        extracted_text=request.text,
-        language=request.lang,
+        extracted_text=input_text,
+        language="en",
         source=request.source or "ocr",
         verdict=verdict,
         detected_allergens=detected_allergens,
@@ -118,7 +137,7 @@ async def analyze(
 
     return {
         **analysis,
-        "lang": request.lang,
+        "lang": "en",
         "scan_id": scan_rec.get("id"),
     }
 

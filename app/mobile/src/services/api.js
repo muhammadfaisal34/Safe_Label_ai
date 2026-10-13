@@ -167,17 +167,44 @@ export async function fetchCurrentUserApi(token) {
 
 const INGREDIENT_HEADER_REGEX = /^(?:ingredients?|ingr[eé]dients?|ingredientes?|ingredienti|zutaten|sk[łl]adniki|состав|composition)\b\s*[:\-–—\.]*\s*/i;
 const STOP_SECTION_REGEX = /(?:^|\n|[\.;]\s*)\b(?:nutrition\s+(?:facts|information|info|values?)|nutritional\s+info|valeurs?\s+nutritionnelles?|n[aä]hrwerte?|store\s+in|keep\s+refrigerated|best\s+before|mindestens\s+haltbar|manufactured\s+by|produced\s+by|distributed\s+by|net\s+wt|net\s+weight|directions\s*:|batch\s*:|lot\s*:)\b/i;
-const ALLERGEN_PREFIX_REGEX = /^(?:contains|may\s+contain|allergy\s+advice|allergens?|traces?\s+of|peut\s+contenir|contient|kann\s+spuren|enth[aä]lt|puede\s+contener|contiene)\b\s*[:\-–—\.]*\s*/i;
+const ALLERGEN_PREFIX_REGEX = /^(?:allergen\s+information|allergy\s+advice|allergens?|contains|may\s+contain|traces?\s+of|peut\s+contenir|contient|kann\s+spuren|enth[aä]lt|puede\s+contener|contiene)\b\s*[:\-–—\.]*\s*/i;
+const NON_LATIN_REGEX = /[\u0400-\u052F\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0900-\u0DFF\u0E00-\u0E7F\u0E80-\u0EFF\u1000-\u109F\u1780-\u17FF\u3040-\u30FF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\u9FFF\uAC00-\uD7AF]/;
+const JUNK_PHRASE_REGEX = /\b(?:in\s+bold\s+text|allergens?\s+in\s+bold|see\s+ingredients\s+in\s+bold|for\s+allergens\s*,?\s*see\s+ingredients|bold\s+text|underlined\s+text)\b[\.\:\,\s]*/gi;
 
 export function cleanIngredientsText(rawText) {
   if (!rawText || typeof rawText !== "string") return "";
   let text = rawText.trim();
   text = text.replace(INGREDIENT_HEADER_REGEX, "");
+  text = text.replace(JUNK_PHRASE_REGEX, "");
+
+  // If text contains non-latin script (Thai, Arabic, Urdu, CJK, etc.), extract English portion
+  const nlMatch = text.match(NON_LATIN_REGEX);
+  if (nlMatch && nlMatch.index !== undefined) {
+    const prefix = text.slice(0, nlMatch.index).trim();
+    const latinWords = prefix.match(/[a-zA-Z]{2,}/g) || [];
+    if (latinWords.length >= 3) {
+      text = prefix;
+    } else {
+      const allMatches = [...text.matchAll(new RegExp(NON_LATIN_REGEX.source, "g"))];
+      if (allMatches.length > 0) {
+        const lastMatch = allMatches[allMatches.length - 1];
+        const suffix = text.slice(lastMatch.index + lastMatch[0].length).trim();
+        const suffixWords = suffix.match(/[a-zA-Z]{2,}/g) || [];
+        if (suffixWords.length >= 3) {
+          text = suffix;
+        }
+      }
+    }
+  }
+
   const stopMatch = text.match(STOP_SECTION_REGEX);
   if (stopMatch && stopMatch.index !== undefined) {
     text = text.slice(0, stopMatch.index);
   }
-  return text.replace(/[.;,\s]+$/, "").trim();
+
+  // Remove any remaining non-latin script characters
+  text = text.replace(new RegExp(NON_LATIN_REGEX.source, "g"), "").replace(/\s+/g, " ").trim();
+  return text.replace(/^[.,;:\s]+|[.,;:\s]+$/g, "").trim();
 }
 
 export function splitIntoIngredientList(text) {
@@ -205,8 +232,13 @@ export function splitIntoIngredientList(text) {
   if (current.trim()) items.push(current.trim());
 
   return items
-    .map((it) => it.replace(/^[•\-\*\s]+/, "").replace(ALLERGEN_PREFIX_REGEX, "").replace(/^[.,;:\s]+|[.,;:\s]+$/g, "").trim())
-    .filter((it) => it.length > 1 && isNaN(Number(it)));
+    .map((it) => it.replace(/^[•\-\*\s]+/, "").replace(ALLERGEN_PREFIX_REGEX, "").replace(JUNK_PHRASE_REGEX, "").replace(/^[.,;:\s]+|[.,;:\s]+$/g, "").trim())
+    .filter((it) => {
+      if (!it || it.length <= 1 || !isNaN(Number(it))) return false;
+      if (NON_LATIN_REGEX.test(it)) return false;
+      if (!/[a-zA-Z]/.test(it)) return false;
+      return true;
+    });
 }
 
 export async function lookupBarcode(code) {
@@ -219,7 +251,7 @@ export async function lookupBarcode(code) {
       if (product?.ingredients_text) {
         const cleanText = cleanIngredientsText(product.ingredients_text);
         const ingredients = product.ingredients && product.ingredients.length > 0
-          ? product.ingredients
+          ? product.ingredients.filter(it => !NON_LATIN_REGEX.test(it) && /[a-zA-Z]/.test(it))
           : splitIntoIngredientList(cleanText);
         return {
           name: product.product_name || "Unknown product",
@@ -227,8 +259,8 @@ export async function lookupBarcode(code) {
           image: product.image_front_small_url,
           text: cleanText,
           ingredients,
-          raw_text: product.raw_ingredients_text || product.ingredients_text,
-          lang: product.lang || "en",
+          raw_text: cleanText,
+          lang: "en",
           source: "barcode",
         };
       }
@@ -253,14 +285,13 @@ export async function lookupBarcode(code) {
       image: product.image_front_small_url,
       text: cleanText,
       ingredients,
-      raw_text: rawIng,
-      lang: product.ingredients_text_en ? "en" : (product.lang || "en"),
+      raw_text: cleanText,
+      lang: "en",
       source: "barcode",
     };
   } catch (err) {
     return null;
   }
-
 }
 
 export async function ocrImage(uri) {

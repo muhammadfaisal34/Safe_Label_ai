@@ -14,6 +14,49 @@ export default function Results({ route, navigation }) {
 	const findings = result?.findings || [];
 	const ingredients = result?.ingredients || [];
 
+	const NON_LATIN_REGEX = /[\u0400-\u052F\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0900-\u0DFF\u0E00-\u0E7F\u0E80-\u0EFF\u1000-\u109F\u1780-\u17FF\u3040-\u30FF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\u9FFF\uAC00-\uD7AF]/;
+	const JUNK_REGEX = /\b(?:in\s+bold\s+text|allergens?\s+in\s+bold|see\s+ingredients\s+in\s+bold|for\s+allergens\s*,?\s*see\s+ingredients|bold\s+text|underlined\s+text)\b[.,;:]*/gi;
+
+	const cleanEnglishText = (str) => {
+		if (!str || typeof str !== 'string') return '';
+		let clean = str.replace(JUNK_REGEX, '').trim();
+
+		// If text contains non-latin script (Thai, Urdu, Arabic, Chinese, etc.)
+		const nlMatch = clean.match(NON_LATIN_REGEX);
+		if (nlMatch && nlMatch.index !== undefined) {
+			const prefix = clean.slice(0, nlMatch.index).trim();
+			const latinWords = prefix.match(/[a-zA-Z]{2,}/g) || [];
+			if (latinWords.length >= 3) {
+				clean = prefix;
+			} else {
+				const allMatches = [...clean.matchAll(new RegExp(NON_LATIN_REGEX.source, 'g'))];
+				if (allMatches.length > 0) {
+					const lastMatch = allMatches[allMatches.length - 1];
+					const suffix = clean.slice(lastMatch.index + lastMatch[0].length).trim();
+					const suffixWords = suffix.match(/[a-zA-Z]{2,}/g) || [];
+					if (suffixWords.length >= 3) {
+						clean = suffix;
+					}
+				}
+			}
+		}
+
+		clean = clean.replace(new RegExp(NON_LATIN_REGEX.source, 'g'), '').replace(/\s+/g, ' ').trim();
+		return clean.replace(/^[.,;:\s]+|[.,;:\s]+$/g, '').trim();
+	};
+
+	const rawIngredientsList = result?.ingredients?.length > 0 ? result.ingredients : ingredients;
+	const englishIngredients = rawIngredientsList.filter((item) => {
+		if (!item || typeof item !== 'string') return false;
+		if (NON_LATIN_REGEX.test(item)) return false;
+		if (!/[a-zA-Z]/.test(item)) return false;
+		if (/^\s*(?:in\s+bold\s+text|bold\s+text)\s*$/i.test(item)) return false;
+		return true;
+	});
+
+	const rawTextCandidate = result?.ingredients_text || product.text || (englishIngredients.length > 0 ? englishIngredients.join(', ') : '');
+	const displayIngredientsText = cleanEnglishText(rawTextCandidate) || (englishIngredients.length > 0 ? englishIngredients.join(', ') : 'No raw ingredient text extracted.');
+
 	const allergenInfo = (id) => {
 		if (!id) return { id: 'unknown', icon: '⚠️', label: 'Allergen' };
 		const match = ALLERGENS.find((item) => item.id === id || item.id === id.replace(/s$/, ''));
@@ -21,12 +64,16 @@ export default function Results({ route, navigation }) {
 		return { id, icon: '⚠️', label: id.charAt(0).toUpperCase() + id.slice(1) };
 	};
 
-	// Determine profile matches vs general findings
+	// Determine profile matches vs general findings (English only)
 	const mineFindings = findings.filter((f) => {
+		if (NON_LATIN_REGEX.test(f.ingredient)) return false;
 		const info = allergenInfo(f.allergen);
 		return profile.includes(f.allergen) || profile.includes(info.id);
 	});
-	const otherFindings = findings.filter((f) => !mineFindings.includes(f));
+	const otherFindings = findings.filter((f) => {
+		if (NON_LATIN_REGEX.test(f.ingredient)) return false;
+		return !mineFindings.includes(f);
+	});
 
 	const isDanger = mineFindings.length > 0 || verdictKey === 'danger' || verdictKey === 'warning' || verdictKey === 'caution';
 	const isNotice = !isDanger && otherFindings.length > 0;
@@ -191,6 +238,7 @@ export default function Results({ route, navigation }) {
 					borderWidth: 1,
 					borderColor: '#EDF2F7',
 					marginBottom: 16,
+					overflow: 'hidden',
 					shadowColor: '#000',
 					shadowOffset: { width: 0, height: 2 },
 					shadowOpacity: 0.04,
@@ -201,13 +249,13 @@ export default function Results({ route, navigation }) {
 						INGREDIENTS
 					</Text>
 					<Text style={{ fontSize: 13, color: '#4B5563', lineHeight: 20, marginBottom: 12 }}>
-						{result?.ingredients_text || (result?.ingredients && result.ingredients.length > 0 ? result.ingredients.join(', ') : null) || product.text || (ingredients.length > 0 ? ingredients.join(', ') : 'No raw ingredient text extracted.')}
+						{displayIngredientsText}
 					</Text>
 
 					{/* Extracted Ingredient Chips */}
-					{(result?.ingredients?.length > 0 ? result.ingredients : ingredients).length > 0 && (
+					{englishIngredients.length > 0 && (
 						<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
-							{(result?.ingredients?.length > 0 ? result.ingredients : ingredients).map((item, idx) => {
+							{englishIngredients.map((item, idx) => {
 								const itemLow = item.toLowerCase();
 								const isMineMatch = mineFindings.some((f) => {
 									const fIng = f.ingredient.toLowerCase();
@@ -230,14 +278,17 @@ export default function Results({ route, navigation }) {
 										key={idx}
 										style={{
 											paddingHorizontal: 12,
-											paddingVertical: 7,
-											borderRadius: 99,
+											paddingVertical: 8,
+											borderRadius: 14,
 											backgroundColor: chipBg,
 											borderWidth: 1.5,
 											borderColor: chipBorder,
+											maxWidth: '100%',
+											flexDirection: 'row',
+											alignItems: 'center',
 										}}
 									>
-										<Text style={{ fontSize: 12, fontWeight: '600', color: chipText }}>
+										<Text style={{ fontSize: 12.5, fontWeight: '600', color: chipText, lineHeight: 18, flexShrink: 1 }}>
 											{prefix}{item}
 										</Text>
 									</View>
@@ -257,12 +308,13 @@ export default function Results({ route, navigation }) {
 						borderRadius: 20,
 						padding: 16,
 						marginBottom: 20,
+						overflow: 'hidden',
 					}}>
 						<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
 							<View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#EB4D3D', alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
 								<Text style={{ color: '#FFF', fontSize: 13, fontWeight: '900' }}>!</Text>
 							</View>
-							<Text style={{ fontSize: 14, fontWeight: '800', color: '#D93025' }}>
+							<Text style={{ fontSize: 14, fontWeight: '800', color: '#D93025', flexShrink: 1 }}>
 								Contains allergens in your profile
 							</Text>
 						</View>
@@ -275,7 +327,7 @@ export default function Results({ route, navigation }) {
 								return (
 									<View key={i} style={{ marginVertical: 6 }}>
 										<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-											<Text style={{ fontSize: 13, fontWeight: '700', color: '#D93025' }}>
+											<Text style={{ fontSize: 13, fontWeight: '700', color: '#D93025', flex: 1, marginRight: 8 }} numberOfLines={2}>
 												• {f.ingredient}
 											</Text>
 											<Text style={{ fontSize: 11, fontWeight: '600', color: '#9CA3AF' }}>
@@ -286,7 +338,7 @@ export default function Results({ route, navigation }) {
 											Category: {info.icon} {info.label} {f.trace ? '(traces)' : ''} — in your profile
 										</Text>
 										{f.reason && (
-											<Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2, paddingLeft: 12 }}>
+											<Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2, paddingLeft: 12, lineHeight: 16 }}>
 												{f.reason}
 											</Text>
 										)}
@@ -304,6 +356,7 @@ export default function Results({ route, navigation }) {
 						borderRadius: 20,
 						padding: 16,
 						marginBottom: 20,
+						overflow: 'hidden',
 					}}>
 						<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
 							<View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#0284C7', alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
