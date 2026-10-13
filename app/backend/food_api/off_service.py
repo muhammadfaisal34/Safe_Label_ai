@@ -5,8 +5,17 @@ Requires: pip install httpx
 """
 import time
 import httpx
- 
+
+try:
+    from app.backend.ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+except (ModuleNotFoundError, ImportError):
+    try:
+        from ..ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+    except (ModuleNotFoundError, ImportError):
+        from ai.ocr.extractor import extract_ingredients_text, split_into_ingredients
+
 BASE_URL = "https://world.openfoodfacts.org/api/v2/product"
+
 # For testing use staging: "https://world.openfoodfacts.net/api/v2/product"
 HEADERS = {"User-Agent": "SafeLabelAI/1.0 (your-email@example.com)"}  # change this
 FIELDS = ",".join([
@@ -79,13 +88,21 @@ async def analyze_barcode(barcode: str, user_allergens: list[str]) -> dict:
             "barcode": barcode,
             "message": "Product not in database. Check the physical label.",
         }
+    raw_ing = product.get("ingredients_text") or ""
+    clean_ing = extract_ingredients_text(raw_ing) if raw_ing else ""
+    if not clean_ing and raw_ing:
+        clean_ing = raw_ing.strip()
+    ing_list = split_into_ingredients(clean_ing)
+
     return {
         "found": True,
         "barcode": barcode,
         "name": product.get("product_name"),
         "brand": product.get("brands"),
         "image": product.get("image_front_url"),
-        "ingredients_text": product.get("ingredients_text"),  # pass to your ai/ NER module
+        "ingredients_text": clean_ing,
+        "ingredients": ing_list,
+        "raw_ingredients_text": raw_ing,
         "nutriscore": product.get("nutriscore_grade"),
         "nova_group": product.get("nova_group"),
         "safety": check_safety(product, user_allergens),

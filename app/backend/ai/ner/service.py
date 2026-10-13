@@ -1,4 +1,5 @@
 import re
+import time
 
 from .model import get_nlp
 
@@ -29,6 +30,8 @@ def _norm_cat(cat: str) -> str:
 
 
 def extract_entities(text: str) -> dict:
+    t0 = time.perf_counter()
+    print(f"  \033[93m[>>] [NER ENGINE] Running entity extraction ({len(text)} chars)...\033[0m", flush=True)
     text = " ".join(text.split())  # OCR line breaks -> single spaces
     doc = get_nlp()(text)
 
@@ -49,6 +52,13 @@ def extract_entities(text: str) -> dict:
             if not ent._.is_trace:
                 entry["may_contain"] = False
 
+    elapsed = time.perf_counter() - t0
+    time_fmt = f"{elapsed:.2f}s" if elapsed >= 1.0 else f"{elapsed * 1000:.0f}ms"
+    allergens = [a["category"] for a in found.values()]
+    print(
+        f"  \033[92m[OK] [NER ENGINE] Completed in {time_fmt} | Allergens: {len(allergens)} {allergens} | E-numbers: {sorted(e_numbers)}\033[0m",
+        flush=True,
+    )
     return {"allergens": list(found.values()), "e_numbers": sorted(e_numbers)}
 
 
@@ -75,6 +85,11 @@ def merge_results(*results: dict) -> dict:
 def analyze_text(text: str, profile: list[str] | None = None) -> dict:
     if profile is None:
         profile = []
+
+    t0 = time.perf_counter()
+    preview = (text[:45] + "...") if len(text) > 45 else text
+    preview_clean = preview.replace("\n", " ")
+    print(f"  \033[93m[>>] [NER ENGINE] Running spaCy model on {len(text)} chars (\"{preview_clean}\")...\033[0m", flush=True)
 
     ing_text = extract_ingredients_text(text) or text
     clean_text = " ".join(ing_text.split())
@@ -141,6 +156,15 @@ def analyze_text(text: str, profile: list[str] | None = None) -> dict:
         verdict = "warning"
     else:
         verdict = "safe"
+
+    elapsed = time.perf_counter() - t0
+    time_fmt = f"{elapsed:.2f}s" if elapsed >= 1.0 else f"{elapsed * 1000:.0f}ms"
+    detected_cats = list({f["allergen"] for f in findings if f.get("allergen")})
+    user_hits = list({f["allergen"] for f in mine if f.get("allergen")})
+    print(
+        f"  \033[92m[OK] [NER ENGINE] Completed in {time_fmt} | Findings: {len(findings)} {detected_cats} | User Alerts: {user_hits} | Verdict: {verdict.upper()}\033[0m",
+        flush=True,
+    )
 
     return {
         "ingredients": ingredients,

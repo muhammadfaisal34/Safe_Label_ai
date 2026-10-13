@@ -165,6 +165,50 @@ export async function fetchCurrentUserApi(token) {
   return data;
 }
 
+const INGREDIENT_HEADER_REGEX = /^(?:ingredients?|ingr[eé]dients?|ingredientes?|ingredienti|zutaten|sk[łl]adniki|состав|composition)\b\s*[:\-–—\.]*\s*/i;
+const STOP_SECTION_REGEX = /(?:^|\n|[\.;]\s*)\b(?:nutrition\s+(?:facts|information|info|values?)|nutritional\s+info|valeurs?\s+nutritionnelles?|n[aä]hrwerte?|store\s+in|keep\s+refrigerated|best\s+before|mindestens\s+haltbar|manufactured\s+by|produced\s+by|distributed\s+by|net\s+wt|net\s+weight|directions\s*:|batch\s*:|lot\s*:)\b/i;
+const ALLERGEN_PREFIX_REGEX = /^(?:contains|may\s+contain|allergy\s+advice|allergens?|traces?\s+of|peut\s+contenir|contient|kann\s+spuren|enth[aä]lt|puede\s+contener|contiene)\b\s*[:\-–—\.]*\s*/i;
+
+export function cleanIngredientsText(rawText) {
+  if (!rawText || typeof rawText !== "string") return "";
+  let text = rawText.trim();
+  text = text.replace(INGREDIENT_HEADER_REGEX, "");
+  const stopMatch = text.match(STOP_SECTION_REGEX);
+  if (stopMatch && stopMatch.index !== undefined) {
+    text = text.slice(0, stopMatch.index);
+  }
+  return text.replace(/[.;,\s]+$/, "").trim();
+}
+
+export function splitIntoIngredientList(text) {
+  if (!text) return [];
+  const cleaned = cleanIngredientsText(text);
+  const items = [];
+  let current = "";
+  let depth = 0;
+  for (let i = 0; i < cleaned.length; i++) {
+    const char = cleaned[i];
+    if (char === "(" || char === "[" || char === "{") {
+      depth++;
+      current += char;
+    } else if (char === ")" || char === "]" || char === "}") {
+      depth = Math.max(0, depth - 1);
+      current += char;
+    } else if ((char === "," || char === ";" || char === "\n" || char === "•") && depth === 0) {
+      const it = current.trim();
+      if (it) items.push(it);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) items.push(current.trim());
+
+  return items
+    .map((it) => it.replace(/^[•\-\*\s]+/, "").replace(ALLERGEN_PREFIX_REGEX, "").replace(/^[.,;:\s]+|[.,;:\s]+$/g, "").trim())
+    .filter((it) => it.length > 1 && isNaN(Number(it)));
+}
+
 export async function lookupBarcode(code) {
   try {
     const response = await safeFetch(`/products/${encodeURIComponent(code)}`, {
@@ -173,11 +217,17 @@ export async function lookupBarcode(code) {
     if (response.ok) {
       const product = await response.json();
       if (product?.ingredients_text) {
+        const cleanText = cleanIngredientsText(product.ingredients_text);
+        const ingredients = product.ingredients && product.ingredients.length > 0
+          ? product.ingredients
+          : splitIntoIngredientList(cleanText);
         return {
           name: product.product_name || "Unknown product",
           brand: product.brands || "",
           image: product.image_front_small_url,
-          text: product.ingredients_text,
+          text: cleanText,
+          ingredients,
+          raw_text: product.raw_ingredients_text || product.ingredients_text,
           lang: product.lang || "en",
           source: "barcode",
         };
@@ -188,22 +238,29 @@ export async function lookupBarcode(code) {
   }
 
   try {
-    const url = `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,image_front_small_url,ingredients_text,lang`;
+    const url = `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,image_front_small_url,ingredients_text,ingredients_text_en,lang`;
     const response = await fetch(url);
     const payload = await response.json();
-    if (payload.status !== 1 || !payload.product?.ingredients_text) return null;
+    if (payload.status !== 1) return null;
     const product = payload.product;
+    const rawIng = product?.ingredients_text_en || product?.ingredients_text;
+    if (!rawIng) return null;
+    const cleanText = cleanIngredientsText(rawIng);
+    const ingredients = splitIntoIngredientList(cleanText);
     return {
       name: product.product_name || "Unknown product",
       brand: product.brands || "",
       image: product.image_front_small_url,
-      text: product.ingredients_text,
-      lang: product.lang || "en",
+      text: cleanText,
+      ingredients,
+      raw_text: rawIng,
+      lang: product.ingredients_text_en ? "en" : (product.lang || "en"),
       source: "barcode",
     };
   } catch (err) {
     return null;
   }
+
 }
 
 export async function ocrImage(uri) {
@@ -219,12 +276,16 @@ export async function ocrImage(uri) {
     if (response.ok) {
       const result = await response.json();
       if (result?.text && result.text.trim()) {
+        const cleanText = cleanIngredientsText(result.text.trim());
+        const ingredients = result.ingredients && result.ingredients.length > 0
+          ? result.ingredients
+          : splitIntoIngredientList(cleanText);
         return {
           name: "Scanned label",
           brand: "",
           image: uri,
-          text: result.text.trim(),
-          ingredients: result.ingredients || [],
+          text: cleanText,
+          ingredients,
           raw_text: result.raw_text,
           lang: result.lang || "en",
           source: "ocr",
@@ -237,6 +298,7 @@ export async function ocrImage(uri) {
   console.warn("OCR returned no usable text, try again.");
   return null;
 }
+
 
 const TRACE = /(spuren|traces?|may contain|kann|peut contenir|puede contener)/i;
 export async function analyze(product, profile, token = null, user = null) {
@@ -276,10 +338,9 @@ export async function analyze(product, profile, token = null, user = null) {
   }
 
   await wait(600);
-  const parts = product.text
-    .split(/[,;.:()\[\]]+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
+  const parts = product.ingredients && product.ingredients.length > 0
+    ? product.ingredients
+    : splitIntoIngredientList(product.text);
   const findings = [];
   parts.forEach((part) => {
     const low = ` ${part.toLowerCase()} `;

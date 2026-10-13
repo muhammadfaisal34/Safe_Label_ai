@@ -201,18 +201,19 @@ export default function Results({ route, navigation }) {
 						INGREDIENTS
 					</Text>
 					<Text style={{ fontSize: 13, color: '#4B5563', lineHeight: 20, marginBottom: 12 }}>
-						{result?.ingredients_text || product.text || (ingredients.length > 0 ? ingredients.join(', ') : 'No raw ingredient text extracted.')}
+						{result?.ingredients_text || (result?.ingredients && result.ingredients.length > 0 ? result.ingredients.join(', ') : null) || product.text || (ingredients.length > 0 ? ingredients.join(', ') : 'No raw ingredient text extracted.')}
 					</Text>
 
 					{/* Extracted Ingredient Chips */}
-					{ingredients.length > 0 && (
+					{(result?.ingredients?.length > 0 ? result.ingredients : ingredients).length > 0 && (
 						<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
-							{ingredients.map((item, idx) => {
+							{(result?.ingredients?.length > 0 ? result.ingredients : ingredients).map((item, idx) => {
 								const itemLow = item.toLowerCase();
 								const isMineMatch = mineFindings.some((f) => {
 									const fIng = f.ingredient.toLowerCase();
 									return fIng === itemLow || itemLow.includes(fIng) || fIng.includes(itemLow);
 								});
+
 								const isOtherMatch = !isMineMatch && otherFindings.some((f) => {
 									const fIng = f.ingredient.toLowerCase();
 									return fIng === itemLow || itemLow.includes(fIng) || fIng.includes(itemLow);
