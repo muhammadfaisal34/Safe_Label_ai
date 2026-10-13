@@ -113,10 +113,10 @@ def send_2fa_email(to_email: str, code: str) -> dict:
             if response.status_code == 403 and "only send testing emails" in response.text:
                 print("==========================================================================")
                 print("[RESEND TESTING LIMITATION]: 'onboarding@resend.dev' can only send emails to")
-                print("the registered Resend account address (deve.devhub@gmail.com).")
+                print("the registered Resend account owner address.")
                 print(f"For other emails (e.g. {to_email}), use Dev Code: {code}")
                 print("==========================================================================\n")
-                reason_str = "Resend test domain restricted to deve.devhub@gmail.com"
+                reason_str = "Resend test domain restricted to registered account owner"
 
             return {
                 "sent": False,

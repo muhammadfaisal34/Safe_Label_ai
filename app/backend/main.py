@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from food_api import products as food_products
 
 # Ensure workspace root is in sys.path when running uvicorn from app/backend directory
 _workspace_root = Path(__file__).resolve().parents[2]

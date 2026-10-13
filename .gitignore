@@ -6,6 +6,10 @@ dist/
 coverage/
 *.log
 
+# Next.js
+.next/
+out/
+
 # Python
 .venv/
 venv/
@@ -16,7 +20,10 @@ __pycache__/
 
 # Environment and local databases
 .env
+.env*.local
+.env.*
 !.env.example
+!*.env.example
 *.sqlite3
 
 # IDE and OS
