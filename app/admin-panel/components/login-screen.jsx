@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertCircle, Eye, EyeOff, LockKeyhole, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Globe, LockKeyhole, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getCurrentUser, login } from '@/lib/api';
+import { getApiBase, setApiBase, getCurrentUser, login } from '@/lib/api';
 
 export default function LoginScreen({ onLoginSuccess }) {
   const [email, setEmail] = useState('admin@safelabelai.com');
@@ -12,6 +12,8 @@ export default function LoginScreen({ onLoginSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [apiUrl, setApiUrl] = useState(() => getApiBase());
+  const [showApiConfig, setShowApiConfig] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -113,6 +115,38 @@ export default function LoginScreen({ onLoginSuccess }) {
               {loading ? <RefreshCw size={16} className="animate-spin mr-2" /> : null}
               {loading ? 'Authenticating...' : 'Log In'}
             </Button>
+
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setShowApiConfig(!showApiConfig)}
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <Globe size={13} />
+                {showApiConfig ? 'Hide Backend URL' : 'Configure Backend URL (ngrok)'}
+              </button>
+
+              {showApiConfig && (
+                <div className="mt-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 text-left">
+                  <label className="block text-[11px] font-semibold text-slate-700">
+                    FastAPI Backend URL
+                    <Input
+                      type="url"
+                      value={apiUrl}
+                      onChange={(e) => {
+                        setApiUrl(e.target.value);
+                        setApiBase(e.target.value);
+                      }}
+                      placeholder="https://xxxx.ngrok-free.app"
+                      className="mt-1 h-8 bg-white text-xs"
+                    />
+                  </label>
+                  <p className="mt-1 text-[10px] text-slate-400">
+                    Enter your temporary ngrok tunnel URL (or leave default).
+                  </p>
+                </div>
+              )}
+            </div>
           </form>
         </section>
       </div>

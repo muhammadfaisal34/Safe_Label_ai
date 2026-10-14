@@ -1,19 +1,37 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export function getApiBase() {
+  if (typeof window !== 'undefined') {
+    const saved = window.localStorage.getItem('safelabel_api_url');
+    if (saved) return saved.trim().replace(/\/$/, '');
+  }
+  return (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').trim().replace(/\/$/, '');
+}
+
+export function setApiBase(url) {
+  if (typeof window !== 'undefined') {
+    if (url && url.trim()) {
+      window.localStorage.setItem('safelabel_api_url', url.trim().replace(/\/$/, ''));
+    } else {
+      window.localStorage.removeItem('safelabel_api_url');
+    }
+  }
+}
 
 async function request(path, options = {}) {
   const token = typeof window === 'undefined' ? null : window.localStorage.getItem('safelabel_token');
+  const apiBase = getApiBase();
   let response;
   try {
-    response = await fetch(`${API_BASE}${path}`, {
+    response = await fetch(`${apiBase}${path}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers || {}),
       },
     });
   } catch (err) {
-    throw new Error(`Unable to connect to backend server at ${API_BASE}. Please make sure the FastAPI server is running.`);
+    throw new Error(`Unable to connect to backend server at ${apiBase}. Please make sure the FastAPI server is running.`);
   }
 
   const payload = await response.json().catch(() => ({}));
