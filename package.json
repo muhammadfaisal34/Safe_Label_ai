@@ -7,6 +7,8 @@
     "app/admin-panel"
   ],
   "scripts": {
+    "build": "npm --workspace app/admin-panel run build",
+    "start": "npm --workspace app/admin-panel run start",
     "mobile": "npm --workspace app/mobile start",
     "admin": "npm --workspace app/admin-panel run start",
     "build:admin": "npm --workspace app/admin-panel run build"
