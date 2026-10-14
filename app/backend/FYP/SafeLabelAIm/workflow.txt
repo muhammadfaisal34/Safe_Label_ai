@@ -1,8 +1,0 @@
-react native 
-fast api 
-paddle ocr extract text from image
-Fine-tuned Roberta + spaCy NER worked in a pipeline 
-PostgreSQL database 
-google translation api 500,000 char/month
-open food fact api if barcode is available 
-railway for deployment 
