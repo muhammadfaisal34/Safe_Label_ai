@@ -5,9 +5,46 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "ios": { "supportsTablet": false, "infoPlist": { "NSCameraUsageDescription": "SafeLabel AI scans barcodes and ingredient labels." } },
-    "android": { "permissions": ["CAMERA"] },
-    "plugins": [["expo-camera", { "cameraPermission": "SafeLabel AI scans barcodes and ingredient labels." }], "expo-image-picker", "expo-asset", "expo-status-bar"],
-    "platforms": ["ios", "android"]
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "SafeLabel AI scans barcodes and ingredient labels."
+      }
+    },
+    "android": {
+      "package": "com.safelabel.ai",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "SafeLabel AI scans barcodes and ingredient labels."
+        }
+      ],
+      "expo-image-picker",
+      "expo-asset",
+      "expo-status-bar"
+    ],
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "65db8f2d-149c-425c-a122-e00d458580ae"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/65db8f2d-149c-425c-a122-e00d458580ae"
+    }
   }
 }

@@ -165,6 +165,22 @@ export async function fetchCurrentUserApi(token) {
   return data;
 }
 
+export async function updateCurrentUserApi(token, displayName) {
+  const response = await safeFetch("/users/me", {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ display_name: displayName }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.detail || "Failed to update profile");
+  }
+  return data;
+}
+
 const INGREDIENT_HEADER_REGEX = /^(?:ingredients?|ingr[eé]dients?|ingredientes?|ingredienti|zutaten|sk[łl]adniki|состав|composition)\b\s*[:\-–—\.]*\s*/i;
 const STOP_SECTION_REGEX = /(?:^|\n|[\.;]\s*)\b(?:nutrition\s+(?:facts|information|info|values?)|nutritional\s+info|valeurs?\s+nutritionnelles?|n[aä]hrwerte?|store\s+in|keep\s+refrigerated|best\s+before|mindestens\s+haltbar|manufactured\s+by|produced\s+by|distributed\s+by|net\s+wt|net\s+weight|directions\s*:|batch\s*:|lot\s*:)\b/i;
 const ALLERGEN_PREFIX_REGEX = /^(?:allergen\s+information|allergy\s+advice|allergens?|contains|may\s+contain|traces?\s+of|peut\s+contenir|contient|kann\s+spuren|enth[aä]lt|puede\s+contener|contiene)\b\s*[:\-–—\.]*\s*/i;

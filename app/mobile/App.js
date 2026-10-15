@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -25,7 +25,25 @@ function ScanTab({ navigation }) {
 }
 
 function Tabs() {
-	return <Tab.Navigator screenOptions={{ headerShown: false, tabBarActiveTintColor: C.ink }}>
+	return <Tab.Navigator
+		screenOptions={{
+			headerShown: false,
+			tabBarActiveTintColor: C.ink,
+			tabBarInactiveTintColor: C.mute,
+			tabBarStyle: {
+				backgroundColor: C.paper,
+				borderTopColor: C.line,
+				borderTopWidth: 1,
+				height: Platform.OS === 'ios' ? 84 : 64,
+				paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+				paddingTop: 6,
+			},
+			tabBarLabelStyle: {
+				fontSize: 11,
+				fontWeight: '600',
+			},
+		}}
+	>
 		<Tab.Screen name="Home" component={Home} options={{ tabBarIcon: icon('🏠') }} />
 		<Tab.Screen name="History" component={History} options={{ tabBarIcon: icon('🕘') }} />
 		<Tab.Screen name="ScanTab" component={ScanTab} options={{ title: 'Scan', tabBarIcon: ({ focused }) => <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: focused ? C.navy : C.accent, alignItems: 'center', justifyContent: 'center', marginTop: -18, borderWidth: 4, borderColor: C.paper }}><ScannerGlyph active size={24} /></View> }} />

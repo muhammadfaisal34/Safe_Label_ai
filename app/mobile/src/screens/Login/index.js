@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TextInput, View, Pressable } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../store';
 import { resend2FAApi } from '../../services/api';
@@ -133,8 +142,16 @@ export default function Login() {
   };
 
   return (
-    <SafeAreaView style={s.screen}>
-      <ScrollView contentContainerStyle={s.pad}>
+    <SafeAreaView style={s.screen} edges={['top', 'left', 'right', 'bottom']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={[s.pad, { flexGrow: 1, justifyContent: 'center' }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View style={s.loginBrand}>
           <View style={s.logoMark}>
             <Text style={{ fontSize: 28 }}>✓</Text>
@@ -144,14 +161,14 @@ export default function Login() {
         </View>
 
         <View style={s.authCard}>
-          <Text style={s.h2}>
+          <Text style={[s.h2, { marginTop: 4, marginBottom: 6 }]}>
             {mode === '2fa'
               ? 'Verify your email ✉️'
               : mode === 'login'
               ? 'Welcome back'
               : 'Create your account'}
           </Text>
-          <Text style={s.p}>
+          <Text style={[s.p, { marginBottom: 6 }]}>
             {mode === '2fa'
               ? `Enter the 6-digit verification code sent to ${twoFactorEmail}`
               : mode === 'login'
@@ -199,6 +216,7 @@ export default function Login() {
                 title={loading ? 'Verifying code...' : 'Verify & Continue'}
                 onPress={submit}
                 disabled={loading}
+                style={{ marginTop: 6 }}
               />
 
               <Pressable onPress={handleResendCode} disabled={loading} style={{ marginTop: 14 }}>
@@ -255,6 +273,7 @@ export default function Login() {
                 title={loading ? 'Please wait...' : mode === 'login' ? 'Log in' : 'Create account'}
                 onPress={submit}
                 disabled={loading}
+                style={{ marginTop: 18 }}
               />
 
               <Text style={s.switchText}>
@@ -275,6 +294,7 @@ export default function Login() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
-  );
+    </KeyboardAvoidingView>
+  </SafeAreaView>
+);
 }

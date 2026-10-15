@@ -208,7 +208,7 @@ export function ScannerGlyph({ active = false, size = 24 }) {
 
 export const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.paper },
-  pad: { padding: 20, paddingBottom: 40 },
+  pad: { padding: 20, paddingBottom: 95 },
   avatar: {
     width: 50,
     height: 50,
@@ -243,15 +243,21 @@ export const s = StyleSheet.create({
   },
   scanTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
   scanCopy: { color: "#D9EEFF", marginTop: 4, fontSize: 12 },
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  quickGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 10,
+  },
   quickCard: {
-    width: "48%",
-    minHeight: 100,
+    width: "48.5%",
+    minHeight: 96,
     backgroundColor: C.card,
     borderRadius: R.md,
     borderWidth: 1,
     borderColor: C.line,
     padding: 13,
+    justifyContent: "center",
   },
   quickIcon: { color: C.accent, fontSize: 24, fontWeight: "800" },
   quickTitle: { color: C.ink, fontWeight: "800", marginTop: 5 },
@@ -279,11 +285,13 @@ export const s = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: C.line,
-    borderRadius: R.sm,
-    padding: 13,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     marginTop: 12,
     color: C.ink,
     backgroundColor: "#FBFDFF",
+    fontSize: 15,
   },
   switchText: {
     textAlign: "center",
@@ -330,7 +338,7 @@ export const s = StyleSheet.create({
   btn: {
     backgroundColor: C.ink,
     paddingVertical: 15,
-    borderRadius: R.md,
+    borderRadius: 12,
     alignItems: "center",
   },
   ghost: {
@@ -355,13 +363,19 @@ export const s = StyleSheet.create({
   disc: { fontSize: 12, color: C.mute, lineHeight: 18, marginTop: 16 },
   row: { flexDirection: "row", alignItems: "center" },
   settingRow: {
-    minHeight: 58,
+    minHeight: 60,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: C.line,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  settingTitle: { color: C.ink, fontWeight: "700" },
-  settingCopy: { color: C.mute, fontSize: 12, marginTop: 3 },
+  settingTextCol: {
+    flex: 1,
+    paddingRight: 14,
+    justifyContent: "center",
+  },
+  settingTitle: { color: C.ink, fontWeight: "700", fontSize: 15 },
+  settingCopy: { color: C.mute, fontSize: 12, marginTop: 2, lineHeight: 16 },
 });

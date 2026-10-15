@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useApp } from "../../store";
+import { resolveUserDisplayName, useApp } from "../../store";
 import { ALLERGENS } from "../../utils/data";
 import { C, R } from "../../utils/theme";
 import { Btn, Disclaimer, OnboardingModal, Verdict, s } from "../../components";
@@ -23,15 +23,19 @@ export default function Home({ navigation }) {
     dismissOnboardingAllergies,
   } = useApp();
 
+  const displayName = resolveUserDisplayName(user?.name, user?.email);
+  const userInitial = displayName.charAt(0).toUpperCase() || "U";
+  const firstName = displayName.split(" ")[0] || "User";
+
   return (
-    <SafeAreaView style={s.screen}>
+    <SafeAreaView style={s.screen} edges={['top', 'left', 'right']}>
       <OnboardingModal
         visible={showOnboardingAllergies}
         profile={profile}
         onToggle={toggleAllergen}
         onSave={dismissOnboardingAllergies}
       />
-      <ScrollView contentContainerStyle={s.pad}>
+      <ScrollView contentContainerStyle={s.pad} showsVerticalScrollIndicator={false}>
         <View
           style={[
             s.row,
@@ -44,7 +48,7 @@ export default function Home({ navigation }) {
         >
           <View style={{ flex: 1, paddingRight: 12 }}>
             <Text style={s.p}>
-              Hello, {user.name ? user.name.split(" ")[0] : "User"}!
+              Hello, {firstName}!
             </Text>
             <Text style={s.h1}>Stay safe, eat better.</Text>
           </View>
@@ -58,7 +62,7 @@ export default function Home({ navigation }) {
             accessibilityLabel="Open settings and profile"
           >
             <Text style={{ fontWeight: "800", color: "#fff", fontSize: 20 }}>
-              {user.name ? user.name[0].toUpperCase() : "U"}
+              {userInitial}
             </Text>
             <View
               style={{
