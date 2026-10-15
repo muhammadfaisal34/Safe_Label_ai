@@ -32,9 +32,15 @@ jobs:
         run: |
           npm ci || npm install
           npm run build
-          # Copy static and public assets required by standalone server
+          # Copy static and public assets required by standalone server to all expected paths
+          mkdir -p .next/standalone/.next
+          mkdir -p .next/standalone/app/admin-panel/.next
+          cp -r .next/static .next/standalone/.next/
           cp -r .next/static .next/standalone/app/admin-panel/.next/
-          if [ -d "public" ]; then cp -r public .next/standalone/app/admin-panel/; fi
+          if [ -d "public" ]; then 
+            cp -r public .next/standalone/
+            cp -r public .next/standalone/app/admin-panel/
+          fi
 
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
