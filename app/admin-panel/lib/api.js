@@ -1,11 +1,11 @@
 export function getApiBase() {
-  const defaultUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://safelabel-api-g6cnaah8ardsfpfs.uaenorth-01.azurewebsites.net').trim().replace(/\/$/, '');
+  const defaultUrl = 'https://safelabel-api-g6cnaah8ardsfpfs.uaenorth-01.azurewebsites.net';
   if (typeof window !== 'undefined') {
     const isProduction = window.location.hostname.includes('azurewebsites.net');
     const saved = window.localStorage.getItem('safelabel_api_url');
     if (saved) {
       const clean = saved.trim().replace(/\/$/, '');
-      if (isProduction && clean.includes('localhost')) {
+      if (isProduction && (clean.includes('localhost') || clean.includes('ngrok'))) {
         window.localStorage.removeItem('safelabel_api_url');
         return defaultUrl;
       }
