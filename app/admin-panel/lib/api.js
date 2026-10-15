@@ -3,7 +3,7 @@ export function getApiBase() {
     const saved = window.localStorage.getItem('safelabel_api_url');
     if (saved) return saved.trim().replace(/\/$/, '');
   }
-  return (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').trim().replace(/\/$/, '');
+  return (process.env.NEXT_PUBLIC_API_URL || 'https://safelabel-api-g6cnaah8ardsfpfs.uaenorth-01.azurewebsites.net').trim().replace(/\/$/, '');
 }
 
 export function setApiBase(url) {
