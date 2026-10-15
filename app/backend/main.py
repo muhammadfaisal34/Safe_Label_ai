@@ -56,6 +56,16 @@ app.add_api_route("/analyze", scans.analyze, methods=["POST"], tags=["scans"])
 
 
 
+@app.get("/")
+def root() -> dict[str, str]:
+    return {
+        "status": "online",
+        "message": "SafeLabel AI API is running",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}

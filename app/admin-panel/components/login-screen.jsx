@@ -7,12 +7,16 @@ import { Input } from '@/components/ui/input';
 import { getApiBase, setApiBase, getCurrentUser, login } from '@/lib/api';
 
 export default function LoginScreen({ onLoginSuccess }) {
+  const LIVE_AZURE_URL = 'https://safelabel-api-g6cnaah8ardsfpfs.uaenorth-01.azurewebsites.net';
   const [email, setEmail] = useState('admin@safelabelai.com');
   const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [apiUrl, setApiUrl] = useState(() => getApiBase());
+  const [apiUrl, setApiUrl] = useState(() => {
+    const current = getApiBase();
+    return current.includes('localhost') ? LIVE_AZURE_URL : current;
+  });
   const [showApiConfig, setShowApiConfig] = useState(false);
 
   const handleSubmit = async (event) => {
@@ -142,8 +146,18 @@ export default function LoginScreen({ onLoginSuccess }) {
                     />
                   </label>
                   <p className="mt-1 text-[10px] text-slate-400">
-                    Enter your temporary ngrok tunnel URL (or leave default).
+                    Enter custom URL or use the live Azure backend.
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setApiUrl(LIVE_AZURE_URL);
+                      setApiBase(LIVE_AZURE_URL);
+                    }}
+                    className="mt-2 text-[10px] font-semibold text-blue-600 hover:underline"
+                  >
+                    Reset to Live Azure API
+                  </button>
                 </div>
               )}
             </div>
