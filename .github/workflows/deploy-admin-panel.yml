@@ -29,6 +29,7 @@ jobs:
         working-directory: app/admin-panel
         env:
           NEXT_PUBLIC_API_URL: https://safelabel-api-g6cnaah8ardsfpfs.uaenorth-01.azurewebsites.net
+          BACKEND_API_URL: https://safelabel-api-g6cnaah8ardsfpfs.uaenorth-01.azurewebsites.net
         run: |
           npm ci || npm install
           npm run build

@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { getApiBase, setApiBase, getCurrentUser, login } from '@/lib/api';
 
 export default function LoginScreen({ onLoginSuccess }) {
-  const LIVE_AZURE_URL = 'https://safelabel-api-g6cnaah8ardsfpfs.uaenorth-01.azurewebsites.net';
+  const DEFAULT_BACKEND_URL =
+    (typeof window !== 'undefined' && window.__BACKEND_API_URL__) ||
+    'https://safelabel-api-g6cnaah8ardsfpfs.uaenorth-01.azurewebsites.net';
   const [email, setEmail] = useState('admin@safelabelai.com');
   const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
@@ -15,7 +17,7 @@ export default function LoginScreen({ onLoginSuccess }) {
   const [error, setError] = useState('');
   const [apiUrl, setApiUrl] = useState(() => {
     const current = getApiBase();
-    return current.includes('localhost') ? LIVE_AZURE_URL : current;
+    return current && !current.includes('localhost') ? current : DEFAULT_BACKEND_URL;
   });
   const [showApiConfig, setShowApiConfig] = useState(false);
 
@@ -151,12 +153,12 @@ export default function LoginScreen({ onLoginSuccess }) {
                   <button
                     type="button"
                     onClick={() => {
-                      setApiUrl(LIVE_AZURE_URL);
-                      setApiBase(LIVE_AZURE_URL);
+                      setApiUrl(DEFAULT_BACKEND_URL);
+                      setApiBase(DEFAULT_BACKEND_URL);
                     }}
                     className="mt-2 text-[10px] font-semibold text-blue-600 hover:underline"
                   >
-                    Reset to Live Azure API
+                    Reset to Default Backend API
                   </button>
                 </div>
               )}
